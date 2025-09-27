@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:xml/xml.dart' as xml;
+import 'package:path/path.dart' as path;
 import 'app_manager.dart';
 import 'package_manager.dart';
 import 'permission_manager.dart';
 import 'models/app_instance.dart';
+import 'utils/data_persistence_service.dart';
 
 /// Main entry point for the FlutterX Container
 class FlutterXContainer extends StatefulWidget {
@@ -163,9 +167,25 @@ class _ContainerHomeState extends State<ContainerHome> {
     );
   }
 
-  void _launchApp(appInstance) {
-    // Launch the selected app
-    widget.appManager.launchApp(appInstance.package.packageName);
+  void _launchApp(AppInstance appInstance) async {
+    try {
+      // Check permissions and get verified app instance
+      final verifiedAppInstance = await widget.appManager.launchApp(appInstance.package.packageName);
+      
+      // Navigate to the app's screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AppScreen(
+            appInstance: verifiedAppInstance,
+            appManager: widget.appManager,
+          ),
+        ),
+      );
+    } catch (e) {
+      // Show error if app launch fails
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error launching app: $e')));
+    }
   }
 
   void _launchSettingsApp() {
@@ -310,5 +330,444 @@ class AppTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// A screen to display an app's UI
+class AppScreen extends StatefulWidget {
+  final dynamic appInstance;
+  final AppManager appManager;
+
+  const AppScreen({
+    Key? key,
+    required this.appInstance,
+    required this.appManager,
+  }) : super(key: key);
+
+  @override
+  State<AppScreen> createState() => _AppScreenState();
+}
+
+class _AppScreenState extends State<AppScreen> {
+  String? _interfaceContent;
+  String? _codeContent;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppContent();
+  }
+
+  Future<void> _loadAppContent() async {
+    try {
+      // Load the app's interface definition
+      final interfacePath = await _getAppResourcePath(
+        widget.appInstance.package.packageName,
+        widget.appInstance.package.interfacePath,
+      );
+      
+      final interfaceFile = File(interfacePath);
+      if (!await interfaceFile.exists()) {
+        throw Exception('Interface file not found: ${widget.appInstance.package.interfacePath}');
+      }
+      
+      final interfaceContent = await interfaceFile.readAsString();
+      
+      // Load the app's Dart code
+      final codePath = await _getAppResourcePath(
+        widget.appInstance.package.packageName,
+        widget.appInstance.package.codePath,
+      );
+      
+      final codeFile = File(codePath);
+      if (!await codeFile.exists()) {
+        throw Exception('Code file not found: ${widget.appInstance.package.codePath}');
+      }
+      
+      final codeContent = await codeFile.readAsString();
+      
+      setState(() {
+        _interfaceContent = interfaceContent;
+        _codeContent = codeContent;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<String> _getAppResourcePath(String packageName, String resourcePath) async {
+    // Get the packages directory and build the full path
+    final packagesDir = await DataPersistenceService.getPackagesDirectory();
+    return path.join(packagesDir.path, packageName, resourcePath);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.appInstance.package.name),
+          backgroundColor: Colors.blue,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.appInstance.package.name),
+          backgroundColor: Colors.blue,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: 'Close App',
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error,
+                size: 80,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Error loading app: $_error',
+                style: const TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Back to Container'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.appInstance.package.name),
+        backgroundColor: Colors.blue,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: 'Close App',
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        padding: const EdgeInsets.all(16),
+        child: _buildAppInterface(),
+      ),
+    );
+  }
+
+  Widget _buildAppInterface() {
+    if (_interfaceContent == null) {
+      return const Center(child: Text('No interface content to display'));
+    }
+    
+    try {
+      // Parse the XML content into Flutter widgets
+      final widgetBuilder = _AppWidgetBuilder(widget.appManager);
+      return widgetBuilder.parseXmlInterface(_interfaceContent!);
+    } catch (e) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error,
+              size: 80,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Error parsing app interface: $e',
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+/// Helper class to build widgets from XML for the app screen
+class _AppWidgetBuilder {
+  final AppManager _appManager;
+  
+  _AppWidgetBuilder(this._appManager);
+
+  Widget parseXmlInterface(String xmlContent) {
+    try {
+      final document = xml.XmlDocument.parse(xmlContent);
+      final rootElement = document.rootElement;
+      
+      return _convertXmlElementToWidget(rootElement);
+    } catch (e) {
+      // If XML parsing fails, return an error widget
+      return const Center(
+        child: Text('Error loading app interface'),
+      );
+    }
+  }
+
+  Widget _convertXmlElementToWidget(xml.XmlElement element) {
+    switch (element.name.local) {
+      case 'container':
+        return Container(
+          child: _buildChildren(element),
+          padding: _parseEdgeInsets(element.getAttribute('padding')),
+          margin: _parseEdgeInsets(element.getAttribute('margin')),
+          width: _parseDouble(element.getAttribute('width')),
+          height: _parseDouble(element.getAttribute('height')),
+          color: _parseColor(element.getAttribute('color')),
+        );
+      case 'column':
+        return Column(
+          mainAxisAlignment: _parseMainAxisAlignment(element.getAttribute('mainAxisAlignment') ?? 'start'),
+          crossAxisAlignment: _parseCrossAxisAlignment(element.getAttribute('crossAxisAlignment') ?? 'center'),
+          children: element.children
+              .whereType<xml.XmlElement>()
+              .map(_convertXmlElementToWidget)
+              .toList(),
+        );
+      case 'row':
+        return Row(
+          mainAxisAlignment: _parseMainAxisAlignment(element.getAttribute('mainAxisAlignment') ?? 'start'),
+          crossAxisAlignment: _parseCrossAxisAlignment(element.getAttribute('crossAxisAlignment') ?? 'center'),
+          children: element.children
+              .whereType<xml.XmlElement>()
+              .map(_convertXmlElementToWidget)
+              .toList(),
+        );
+      case 'text':
+        return Text(
+          element.innerText ?? '',
+          style: _parseTextStyle(element),
+        );
+      case 'button':
+        final onPressedAction = element.getAttribute('onPressed');
+        return ElevatedButton(
+          onPressed: onPressedAction != null 
+            ? () => _executeAction(onPressedAction) 
+            : null,
+          child: Text(element.innerText ?? 'Button'),
+        );
+      case 'icon_button':
+        final iconType = element.getAttribute('icon') ?? 'add';
+        final onPressedAction = element.getAttribute('onPressed');
+        return IconButton(
+          icon: Icon(_parseIconData(iconType)),
+          onPressed: onPressedAction != null 
+            ? () => _executeAction(onPressedAction) 
+            : null,
+        );
+      case 'image':
+        final imagePath = element.getAttribute('src') ?? '';
+        // In a real implementation, we'd load the image from the app's resources
+        return Image.asset(imagePath);
+      case 'divider':
+        return const Divider();
+      case 'card':
+        return Card(
+          child: _buildChildren(element),
+        );
+      case 'list_tile':
+        xml.XmlElement? titleElement;
+        xml.XmlElement? subtitleElement;
+        
+        for (final child in element.children) {
+          if (child is xml.XmlElement) {
+            if (child.name.local == 'title') {
+              titleElement = child;
+            } else if (child.name.local == 'subtitle') {
+              subtitleElement = child;
+            }
+          }
+        }
+        
+        return ListTile(
+          title: titleElement != null 
+            ? _convertXmlElementToWidget(titleElement)
+            : null,
+          subtitle: subtitleElement != null 
+            ? _convertXmlElementToWidget(subtitleElement)
+            : null,
+        );
+      default:
+        return Container(
+          child: Text('Unknown element: ${element.name.local}'),
+        );
+    }
+  }
+
+  Widget _buildChildren(xml.XmlElement element) {
+    final children = element.children
+        .whereType<xml.XmlElement>()
+        .map(_convertXmlElementToWidget)
+        .toList();
+    
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Column(children: children);
+  }
+
+  /// Parse EdgeInsets from string (e.g., "10" or "10,5,10,5")
+  EdgeInsets _parseEdgeInsets(String? value) {
+    if (value == null || value.isEmpty) return const EdgeInsets.all(0);
+    
+    final parts = value.split(',');
+    if (parts.length == 1) {
+      final all = double.tryParse(parts[0]) ?? 0.0;
+      return EdgeInsets.all(all);
+    } else if (parts.length == 4) {
+      final top = double.tryParse(parts[0]) ?? 0.0;
+      final right = double.tryParse(parts[1]) ?? 0.0;
+      final bottom = double.tryParse(parts[2]) ?? 0.0;
+      final left = double.tryParse(parts[3]) ?? 0.0;
+      return EdgeInsets.fromLTRB(left, top, right, bottom);
+    }
+    
+    return const EdgeInsets.all(0);
+  }
+
+  /// Parse double value
+  double? _parseDouble(String? value) {
+    return value != null ? double.tryParse(value) : null;
+  }
+
+  /// Parse color from string
+  Color? _parseColor(String? value) {
+    if (value == null || value.isEmpty) return null;
+    
+    // Simple color parsing (could be extended)
+    switch (value.toLowerCase()) {
+      case 'red': return Colors.red;
+      case 'blue': return Colors.blue;
+      case 'green': return Colors.green;
+      case 'yellow': return Colors.yellow;
+      case 'black': return Colors.black;
+      case 'white': return Colors.white;
+      case 'grey': case 'gray': return Colors.grey;
+      case 'transparent': return Colors.transparent;
+      default: 
+        // Try to parse hex color
+        if (value.startsWith('#')) {
+          try {
+            final hexColor = value.replaceAll('#', '');
+            if (hexColor.length == 6) {
+              return Color(int.parse('FF$hexColor', radix: 16));
+            } else if (hexColor.length == 8) {
+              return Color(int.parse(hexColor, radix: 16));
+            }
+          } catch (e) {
+            return null;
+          }
+        }
+        return null;
+    }
+  }
+
+  /// Parse MainAxisAlignment
+  MainAxisAlignment _parseMainAxisAlignment(String value) {
+    switch (value.toLowerCase()) {
+      case 'start': return MainAxisAlignment.start;
+      case 'end': return MainAxisAlignment.end;
+      case 'center': return MainAxisAlignment.center;
+      case 'space_between': return MainAxisAlignment.spaceBetween;
+      case 'space_around': return MainAxisAlignment.spaceAround;
+      case 'space_evenly': return MainAxisAlignment.spaceEvenly;
+      default: return MainAxisAlignment.start;
+    }
+  }
+
+  /// Parse CrossAxisAlignment
+  CrossAxisAlignment _parseCrossAxisAlignment(String value) {
+    switch (value.toLowerCase()) {
+      case 'start': return CrossAxisAlignment.start;
+      case 'end': return CrossAxisAlignment.end;
+      case 'center': return CrossAxisAlignment.center;
+      case 'stretch': return CrossAxisAlignment.stretch;
+      case 'baseline': return CrossAxisAlignment.baseline;
+      default: return CrossAxisAlignment.center;
+    }
+  }
+
+  /// Parse TextStyle from element attributes
+  TextStyle _parseTextStyle(xml.XmlElement element) {
+    final color = _parseColor(element.getAttribute('color'));
+    final size = double.tryParse(element.getAttribute('size') ?? '');
+    final weight = element.getAttribute('weight');
+    
+    return TextStyle(
+      color: color,
+      fontSize: size,
+      fontWeight: weight != null ? _parseFontWeight(weight) : null,
+    );
+  }
+
+  /// Parse FontWeight
+  FontWeight _parseFontWeight(String value) {
+    switch (value.toLowerCase()) {
+      case 'w100': return FontWeight.w100;
+      case 'w200': return FontWeight.w200;
+      case 'w300': return FontWeight.w300;
+      case 'w400': return FontWeight.w400;
+      case 'w500': return FontWeight.w500;
+      case 'w600': return FontWeight.w600;
+      case 'w700': return FontWeight.w700;
+      case 'w800': return FontWeight.w800;
+      case 'w900': return FontWeight.w900;
+      case 'normal': return FontWeight.normal;
+      case 'bold': return FontWeight.bold;
+      default: return FontWeight.normal;
+    }
+  }
+
+  /// Parse IconData from string
+  IconData _parseIconData(String value) {
+    switch (value.toLowerCase()) {
+      case 'add': return Icons.add;
+      case 'remove': case 'delete': return Icons.delete;
+      case 'edit': return Icons.edit;
+      case 'save': return Icons.save;
+      case 'home': return Icons.home;
+      case 'settings': return Icons.settings;
+      case 'info': return Icons.info;
+      case 'close': return Icons.close;
+      default: return Icons.help;
+    }
+  }
+
+  /// Execute an action (for now just print, in real implementation would execute Dart code)
+  void _executeAction(String action) {
+    print('Executing action: $action');
+    // In a real implementation, this would execute the Dart code associated with the action
   }
 }
