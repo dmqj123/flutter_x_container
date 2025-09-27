@@ -168,4 +168,12 @@ class PermissionManager {
   Future<Map<String, bool>> getAppPermissions(String packageName) async {
     return await DataPersistenceService.loadAppPermissions(packageName);
   }
+
+  /// Removes all permissions associated with an app
+  Future<void> removeAppPermissions(String packageName) async {
+    // Delete the permissions file for the app
+    // Since DataPersistenceService doesn't have a specific delete method for permissions,
+    // we'll save an empty permissions map
+    await DataPersistenceService.saveAppPermissions(packageName, {});
+  }
 }

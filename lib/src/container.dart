@@ -28,247 +28,6 @@ class AppUIRegistry {
   }
 }
 
-/// Calculator state management class (this would ideally be in the app's code)
-class CalculatorState {
-  String _displayValue = '0';
-  double? _firstOperand;
-  String? _pendingOperator;
-  bool _waitingForOperand = false;
-
-  String get displayValue => _displayValue;
-
-  /// Handles input of a number
-  void inputDigit(String digit) {
-    if (_waitingForOperand) {
-      _displayValue = digit;
-      _waitingForOperand = false;
-    } else {
-      _displayValue = _displayValue == '0' ? digit : _displayValue + digit;
-    }
-  }
-
-  /// Handles decimal point input
-  void inputDecimal() {
-    if (_waitingForOperand) {
-      _displayValue = '0.';
-      _waitingForOperand = false;
-    } else if (!_displayValue.contains('.')) {
-      _displayValue = _displayValue + '.';
-    }
-  }
-
-  /// Handles input of an operator
-  void inputOperator(String op) {
-    if (_firstOperand == null) {
-      _firstOperand = double.tryParse(_displayValue);
-    } else if (!_waitingForOperand) {
-      String result = performCalculation();
-      _firstOperand = double.tryParse(result);
-    }
-    
-    _pendingOperator = op;
-    _waitingForOperand = true;
-  }
-
-  /// Performs the calculation based on the current operator
-  String performCalculation() {
-    if (_firstOperand == null || _pendingOperator == null) {
-      return _displayValue;
-    }
-
-    double inputValue = double.tryParse(_displayValue) ?? 0.0;
-    double result = 0.0;
-
-    switch (_pendingOperator) {
-      case '+':
-        result = _firstOperand! + inputValue;
-        break;
-      case '-':
-        result = _firstOperand! - inputValue;
-        break;
-      case '*':
-        result = _firstOperand! * inputValue;
-        break;
-      case '/':
-        if (inputValue == 0) {
-          return 'Error';
-        }
-        result = _firstOperand! / inputValue;
-        break;
-      default:
-        result = inputValue;
-    }
-
-    // Format the result to remove unnecessary decimal places
-    if (result == result.toInt()) {
-      return result.toInt().toString();
-    } else {
-      return result.toString();
-    }
-  }
-
-  /// Calculates the final result when equals is pressed
-  void calculateResult() {
-    if (_firstOperand != null && _pendingOperator != null) {
-      _displayValue = performCalculation();
-      _firstOperand = null;
-      _pendingOperator = null;
-      _waitingForOperand = true;
-    }
-  }
-
-  /// Clears all calculator data
-  void clearAll() {
-    _displayValue = '0';
-    _firstOperand = null;
-    _pendingOperator = null;
-    _waitingForOperand = false;
-  }
-
-  /// Handles special functions like percentage
-  void inputPercentage() {
-    double currentValue = double.tryParse(_displayValue) ?? 0.0;
-    _displayValue = (currentValue / 100).toString();
-  }
-
-  /// Handles sign change (+/-)
-  void toggleSign() {
-    double currentValue = double.tryParse(_displayValue) ?? 0.0;
-    currentValue = -currentValue;
-    
-    if (currentValue == currentValue.toInt()) {
-      _displayValue = currentValue.toInt().toString();
-    } else {
-      _displayValue = currentValue.toString();
-    }
-  }
-}
-
-/// Calculator app implementation
-class CalculatorAppInterface extends AppInterface {
-  @override
-  Widget buildUI() {
-    return const CalculatorWidget();
-  }
-}
-
-/// Calculator UI widget
-class CalculatorWidget extends StatefulWidget {
-  const CalculatorWidget({Key? key}) : super(key: key);
-
-  @override
-  State<CalculatorWidget> createState() => _CalculatorWidgetState();
-}
-
-class _CalculatorWidgetState extends State<CalculatorWidget> {
-  final CalculatorState _calculator = CalculatorState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Text('Calculator', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        Container(
-          margin: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: Colors.lightGreen[100],
-                child: Text(
-                  _calculator.displayValue,
-                  style: const TextStyle(fontSize: 32, color: Colors.black),
-                  textAlign: TextAlign.right,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildCalculatorButtons(),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCalculatorButtons() {
-    return Column(
-      children: [
-        _buildRow(['C', '7', '8', '9', '/']),
-        _buildRow(['+/-', '4', '5', '6', '*']),
-        _buildRow(['%', '1', '2', '3', '-']),
-        _buildRow(['0', '.', '=', '+']),
-      ],
-    );
-  }
-
-  Widget _buildRow(List<String> buttons) {
-    List<Widget> buttonWidgets = buttons.map((button) {
-      return Expanded(
-        child: Container(
-          margin: const EdgeInsets.all(5),
-          child: ElevatedButton(
-            onPressed: () => _handleButtonPress(button),
-            child: Text(button, style: const TextStyle(fontSize: 20)),
-          ),
-        ),
-      );
-    }).toList();
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: buttonWidgets,
-    );
-  }
-
-  void _handleButtonPress(String button) {
-    setState(() {
-      switch (button) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-          _calculator.inputDigit(button);
-          break;
-        case '.':
-          _calculator.inputDecimal();
-          break;
-        case '+':
-          _calculator.inputOperator('+');
-          break;
-        case '-':
-          _calculator.inputOperator('-');
-          break;
-        case '*':
-          _calculator.inputOperator('*');
-          break;
-        case '/':
-          _calculator.inputOperator('/');
-          break;
-        case '=':
-          _calculator.calculateResult();
-          break;
-        case 'C':
-          _calculator.clearAll();
-          break;
-        case '+/-':
-          _calculator.toggleSign();
-          break;
-        case '%':
-          _calculator.inputPercentage();
-          break;
-      }
-    });
-  }
-}
-
 /// Main entry point for the FlutterX Container
 class FlutterXContainer extends StatefulWidget {
   const FlutterXContainer({Key? key}) : super(key: key);
@@ -293,15 +52,6 @@ class _FlutterXContainerState extends State<FlutterXContainer> {
       packageManager: _packageManager,
       permissionManager: _permissionManager,
     );
-    
-    // Register app-specific UI widgets
-    _registerAppUIWidgets();
-  }
-  
-  /// Register UI widgets for specific apps
-  void _registerAppUIWidgets() {
-    // Register calculator app UI
-    AppUIRegistry.registerAppInterface('com.flutterx.calculator', CalculatorAppInterface());
   }
 
   @override
@@ -429,6 +179,10 @@ class _ContainerHomeState extends State<ContainerHome> {
               return AppTile(
                 appInstance: app,
                 onTap: () => _launchApp(app),
+                appManager: widget.appManager,
+                onUninstalled: () {
+                  setState(() {}); // 刷新UI
+                },
               );
             },
           ),
@@ -571,11 +325,15 @@ class _AppInstallDialogState extends State<AppInstallDialog> {
 class AppTile extends StatelessWidget {
   final AppInstance appInstance;
   final VoidCallback onTap;
+  final AppManager appManager; // 添加 AppManager 参数以便卸载应用
+  final VoidCallback onUninstalled; // 添加卸载回调
 
   const AppTile({
     Key? key,
     required this.appInstance,
     required this.onTap,
+    required this.appManager,
+    required this.onUninstalled,
   }) : super(key: key);
 
   @override
@@ -584,6 +342,8 @@ class AppTile extends StatelessWidget {
       elevation: 2,
       child: InkWell(
         onTap: onTap,
+        onLongPress: () => _showUninstallDialog(context), // 长按触发卸载
+        onSecondaryTap: () => _showUninstallDialog(context), // 右键点击触发卸载
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -640,6 +400,53 @@ class AppTile extends StatelessWidget {
   Future<String> _getFullIconPath() async {
     final packagesDir = await DataPersistenceService.getPackagesDirectory();
     return path.join(packagesDir.path, appInstance.package.packageName, appInstance.package.iconPath);
+  }
+  
+  /// 显示卸载确认对话框
+  void _showUninstallDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Uninstall App'),
+        content: Text('Are you sure you want to uninstall "${appInstance.package.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(), // 取消
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop(); // 关闭对话框
+              try {
+                // 调用卸载功能
+                await appManager.uninstallApp(appInstance.package.packageName);
+                
+                // 刷新UI
+                onUninstalled();
+                
+                // 显示成功消息
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${appInstance.package.name} uninstalled successfully'),
+                  ),
+                );
+              } catch (e) {
+                // 显示错误消息
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error uninstalling app: $e'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Uninstall'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red, // 设置文本颜色为红色
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -367,10 +367,18 @@ class AppManager {
     // Remove from in-memory list
     _installedApps.removeWhere((app) => app.package.packageName == packageName);
     
-    // In a real implementation, this would also:
-    // 1. Remove the app's directory
-    // 2. Remove permissions associated with the app
-    // 3. Clean up any other app-specific data
+    // Remove app data from persistent storage
+    await DataPersistenceService.deleteAppInstance(packageName);
+    
+    // Remove app package directory
+    final packagesDir = await DataPersistenceService.getPackagesDirectory();
+    final appPackageDir = Directory(path.join(packagesDir.path, packageName));
+    if (await appPackageDir.exists()) {
+      await appPackageDir.delete(recursive: true);
+    }
+    
+    // Remove permissions associated with the app
+    await _permissionManager.removeAppPermissions(packageName);
   }
 
   /// Adds an app instance to the installed apps list and persists it
