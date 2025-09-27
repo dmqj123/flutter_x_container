@@ -8,17 +8,17 @@
         <container margin="0,8,0,0">
           <text>Theme</text>
           <row margin="0,4,0,0">
-            <button id="theme_light">Light</button>
-            <button id="theme_dark" margin="8,0,0,0">Dark</button>
-            <button id="theme_system" margin="8,0,0,0">System</button>
+            <button id="theme_light" onPressed="setThemeLight">Light</button>
+            <button id="theme_dark" margin="8,0,0,0" onPressed="setThemeDark">Dark</button>
+            <button id="theme_system" margin="8,0,0,0" onPressed="setThemeSystem">System</button>
           </row>
         </container>
         
         <container margin="0,8,0,0">
           <text>Language</text>
           <row margin="0,4,0,0">
-            <button id="lang_en">English</button>
-            <button id="lang_zh" margin="8,0,0,0">中文</button>
+            <button id="lang_en" onPressed="setLanguageEnglish">English</button>
+            <button id="lang_zh" margin="8,0,0,0" onPressed="setLanguageChinese">中文</button>
           </row>
         </container>
       </container>
@@ -29,18 +29,18 @@
         <container margin="0,8,0,0">
           <text>Biometric Lock</text>
           <row margin="0,4,0,0">
-            <button id="bio_on">On</button>
-            <button id="bio_off" margin="8,0,0,0">Off</button>
+            <button id="bio_on" onPressed="setBiometricOn">On</button>
+            <button id="bio_off" margin="8,0,0,0" onPressed="setBiometricOff">Off</button>
           </row>
         </container>
         
         <container margin="0,8,0,0">
           <text>Auto-lock Timeout</text>
           <row margin="0,4,0,0">
-            <button id="timeout_1">1 min</button>
-            <button id="timeout_5" margin="8,0,0,0">5 min</button>
-            <button id="timeout_15" margin="8,0,0,0">15 min</button>
-            <button id="timeout_never" margin="8,0,0,0">Never</button>
+            <button id="timeout_1" onPressed="setTimeout1Min">1 min</button>
+            <button id="timeout_5" margin="8,0,0,0" onPressed="setTimeout5Min">5 min</button>
+            <button id="timeout_15" margin="8,0,0,0" onPressed="setTimeout15Min">15 min</button>
+            <button id="timeout_never" margin="8,0,0,0" onPressed="setTimeoutNever">Never</button>
           </row>
         </container>
       </container>
@@ -50,7 +50,7 @@
         <text margin="0,8,0,0">FlutterX Container v1.0.0</text>
         <text margin="0,4,0,0">© 2025 FlutterX Project</text>
         
-        <button id="check_updates" margin="0,16,0,0">Check for Updates</button>
+        <button id="check_updates" margin="0,16,0,0" onPressed="checkForUpdates">Check for Updates</button>
       </container>
     </row>
   </column>

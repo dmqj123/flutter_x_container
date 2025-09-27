@@ -7,6 +7,11 @@ class PermissionManager {
   static final List<Permission> _supportedPermissions = [
     // Normal permissions
     Permission(
+      name: 'basic_functionality',
+      level: PermissionLevel.normal,
+      description: 'Basic app functionality',
+    ),
+    Permission(
       name: 'camera',
       level: PermissionLevel.normal,
       description: 'Access camera to take photos',

@@ -30,7 +30,7 @@
 
 开源共建：邀你一起完善生态
 
-FlutterX Container 所有核心代码已开源至 GitHub（地址：github.com/xxx），无论你是 Flutter 开发者、跨端技术爱好者，还是有「打破系统应用壁垒」想法的创业者，都能：
+FlutterX Container 所有核心代码已开源至 GitHub（地址：github.com/dmqj123/flutter_x_container），无论你是 Flutter 开发者、跨端技术爱好者，还是有「打破系统应用壁垒」想法的创业者，都能：
 
 	•	提交 PR 优化容器性能、扩展 API 能力；
 

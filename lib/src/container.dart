@@ -174,11 +174,21 @@ class _ContainerHomeState extends State<ContainerHome> {
       
       // Navigate to the app's screen
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => AppScreen(
-            appInstance: verifiedAppInstance,
-            appManager: widget.appManager,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => AppScreen(
+        appInstance: verifiedAppInstance,
+        appManager: widget.appManager,
           ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // 缩放动画
+        return ScaleTransition(
+          scale: CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOut,
+          ),
+          child: child,
+        );
+          },
         ),
       );
     } catch (e) {
@@ -261,7 +271,7 @@ class _AppInstallDialogState extends State<AppInstallDialog> {
           TextField(
             controller: _pathController,
             decoration: const InputDecoration(
-              hintText: 'e.g., /storage/emulated/0/app.fxc',
+              hintText: 'path/to/app.fxc',
               border: OutlineInputBorder(),
             ),
           ),
@@ -289,7 +299,7 @@ class _AppInstallDialogState extends State<AppInstallDialog> {
 
 /// Widget representing a single app tile
 class AppTile extends StatelessWidget {
-  final dynamic appInstance;
+  final AppInstance appInstance;
   final VoidCallback onTap;
 
   const AppTile({
@@ -315,7 +325,7 @@ class AppTile extends StatelessWidget {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.apps, size: 36),
+              child: _buildAppIcon(),
             ),
             const SizedBox(height: 8),
             // App name
@@ -331,11 +341,41 @@ class AppTile extends StatelessWidget {
       ),
     );
   }
+  
+  Widget _buildAppIcon() {
+    // If we have a valid icon path, try to display it
+    if (appInstance.package.iconPath.isNotEmpty) {
+      return FutureBuilder<String>(
+        future: _getFullIconPath(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && File(snapshot.data!).existsSync()) {
+            return Image.file(
+              File(snapshot.data!),
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+            );
+          } else {
+            // If no valid icon, show the default icon
+            return const Icon(Icons.apps, size: 36, color: Colors.grey);
+          }
+        },
+      );
+    } else {
+      // If no icon path, show the default icon
+      return const Icon(Icons.apps, size: 36, color: Colors.grey);
+    }
+  }
+  
+  Future<String> _getFullIconPath() async {
+    final packagesDir = await DataPersistenceService.getPackagesDirectory();
+    return path.join(packagesDir.path, appInstance.package.packageName, appInstance.package.iconPath);
+  }
 }
 
 /// A screen to display an app's UI
 class AppScreen extends StatefulWidget {
-  final dynamic appInstance;
+  final AppInstance appInstance;
   final AppManager appManager;
 
   const AppScreen({
@@ -466,6 +506,7 @@ class _AppScreenState extends State<AppScreen> {
       appBar: AppBar(
         title: Text(widget.appInstance.package.name),
         backgroundColor: Colors.blue,
+        automaticallyImplyLeading: false, // 不自动显示返回键，因为我们有关闭按钮
         actions: [
           IconButton(
             icon: const Icon(Icons.close),

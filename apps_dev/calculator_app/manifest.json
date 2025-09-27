@@ -1,0 +1,17 @@
+{
+  "packageName": "com.flutterx.calculator",
+  "name": "Calculator",
+  "version": "1.0.0",
+  "iconPath": "assets/icon.png",
+  "permissions": [
+    {
+      "name": "basic_functionality",
+      "level": "PermissionLevel.normal",
+      "description": "Basic app functionality"
+    }
+  ],
+  "interfacePath": "interface.xml",
+  "codePath": "main.dart",
+  "packagePath": "",
+  "isSystemApp": false
+}
