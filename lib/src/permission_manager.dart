@@ -68,6 +68,11 @@ class PermissionManager {
       level: PermissionLevel.administrator,
       description: 'Access mouse position (desktop)',
     ),
+    Permission(
+      name: 'delete_data',
+      level: PermissionLevel.administrator,
+      description: 'Clear application data and storage',
+    ),
   ];
 
   /// Checks if a permission name is valid in the system

@@ -524,6 +524,87 @@ class _AppScreenState extends State<AppScreen> {
     );
   }
 
+  /// Handle special actions from app interface
+  void _handleAction(String action) {
+    switch (action) {
+      case 'clearAllData':
+        _clearAllData();
+        break;
+      default:
+        // Handle other actions as needed
+        print('Unknown action: $action');
+    }
+  }
+  
+  /// Clear all application data
+  void _clearAllData() {
+    // Show a confirmation dialog before clearing data
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Data'),
+        content: const Text('Are you sure you want to clear all application data? This will delete all installed apps and their data permanently.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(), // Cancel
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              _confirmClearAllData();
+            },
+            child: const Text('Clear Data'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// Confirm and execute clearing all data
+  void _confirmClearAllData() async {
+    try {
+      // Use the DataPersistenceService to clear all data
+      await DataPersistenceService.clearAllData();
+      print('Data cleanup completed.');
+      
+      // Show a success message
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Data Cleared'),
+          content: const Text('All application data has been cleared successfully. The app will now close. Please restart it.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Close the app so it can be restarted with clean data
+                exit(0); // This will terminate the app
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      print('Error clearing data: $error');
+      // Show an error message
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Failed to clear data: $error'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+  
   Widget _buildAppInterface() {
     if (_interfaceContent == null) {
       return const Center(child: Text('No interface content to display'));
@@ -531,7 +612,10 @@ class _AppScreenState extends State<AppScreen> {
     
     try {
       // Parse the XML content into Flutter widgets
-      final widgetBuilder = _AppWidgetBuilder(widget.appManager);
+      final widgetBuilder = _AppWidgetBuilder(
+        widget.appManager,
+        onAction: _handleAction,
+      );
       return widgetBuilder.parseXmlInterface(_interfaceContent!);
     } catch (e) {
       return Center(
@@ -559,8 +643,9 @@ class _AppScreenState extends State<AppScreen> {
 /// Helper class to build widgets from XML for the app screen
 class _AppWidgetBuilder {
   final AppManager _appManager;
+  final Function(String action)? onAction;
   
-  _AppWidgetBuilder(this._appManager);
+  _AppWidgetBuilder(this._appManager, {this.onAction});
 
   Widget parseXmlInterface(String xmlContent) {
     try {
@@ -809,6 +894,11 @@ class _AppWidgetBuilder {
   /// Execute an action (for now just print, in real implementation would execute Dart code)
   void _executeAction(String action) {
     print('Executing action: $action');
+    
+    // If there's a callback for special actions, use it
+    if (onAction != null) {
+      onAction!(action);
+    }
     // In a real implementation, this would execute the Dart code associated with the action
   }
 }

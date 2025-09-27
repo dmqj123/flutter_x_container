@@ -192,4 +192,21 @@ class DataPersistenceService {
     
     return permissions;
   }
+  
+  /// Clears all persistent data
+  static Future<void> clearAllData() async {
+    // Get both apps and packages directories
+    final appsDir = await getAppsDirectory();
+    final packagesDir = await getPackagesDirectory();
+    
+    // Delete the apps directory and all its contents
+    if (await appsDir.exists()) {
+      await appsDir.delete(recursive: true);
+    }
+    
+    // Delete the packages directory and all its contents
+    if (await packagesDir.exists()) {
+      await packagesDir.delete(recursive: true);
+    }
+  }
 }

@@ -46,6 +46,16 @@
       </container>
       
       <container margin="0,16,0,0">
+        <text size="18" weight="bold">Data Management</text>
+        
+        <container margin="0,8,0,0">
+          <text>Delete All Data</text>
+          <button id="clear_data" margin="0,4,0,0" onPressed="clearAllData" color="red">Clear All Data</button>
+          <text size="12" color="red" margin="0,4,0,0">Warning: This will delete all app data permanently</text>
+        </container>
+      </container>
+      
+      <container margin="0,16,0,0">
         <text size="18" weight="bold">About</text>
         <text margin="0,8,0,0">FlutterX Container v1.0.0</text>
         <text margin="0,4,0,0">© 2025 FlutterX Project</text>

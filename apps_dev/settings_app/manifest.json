@@ -8,6 +8,11 @@
       "name": "system_settings",
       "level": "PermissionLevel.administrator",
       "description": "Change system settings"
+    },
+    {
+      "name": "delete_data",
+      "level": "PermissionLevel.administrator",
+      "description": "Clear application data and storage"
     }
   ],
   "interfacePath": "interface.xml",
