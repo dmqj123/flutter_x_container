@@ -1,6 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+String get_text(){
+  return "ddd";
+}
+
 /// Settings App for FlutterX Container
 class SettingsApp {
   late BuildContext _context;

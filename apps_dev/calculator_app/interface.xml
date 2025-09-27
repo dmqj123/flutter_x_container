@@ -2,22 +2,25 @@
   <text size="24" weight="bold">Calculator</text>
   <container margin="20,20,20,20">
     <container padding="16,16,16,16" color="lightgrey">
-      <text id="display" size="32" color="black" textAlign="right">0</text>
+      <text id="display" size="32" color="black" textAlign="right" text="{getDisplayValue()}">0</text>
     </container>
     <container margin="0,10,0,0">
       <row mainAxisAlignment="space_evenly">
+        <button onPressed="clearAll">C</button>
         <button onPressed="numberPressed_7">7</button>
         <button onPressed="numberPressed_8">8</button>
         <button onPressed="numberPressed_9">9</button>
         <button onPressed="operatorPressed_divide">/</button>
       </row>
       <row mainAxisAlignment="space_evenly" margin="0,10,0,0">
+        <button onPressed="toggleSign">+/-</button>
         <button onPressed="numberPressed_4">4</button>
         <button onPressed="numberPressed_5">5</button>
         <button onPressed="numberPressed_6">6</button>
         <button onPressed="operatorPressed_multiply">*</button>
       </row>
       <row mainAxisAlignment="space_evenly" margin="0,10,0,0">
+        <button onPressed="inputPercentage">%</button>
         <button onPressed="numberPressed_1">1</button>
         <button onPressed="numberPressed_2">2</button>
         <button onPressed="numberPressed_3">3</button>

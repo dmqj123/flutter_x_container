@@ -8,6 +8,267 @@ import 'permission_manager.dart';
 import 'models/app_instance.dart';
 import 'utils/data_persistence_service.dart';
 
+/// Interface that apps must implement to provide their main UI
+abstract class AppInterface {
+  Widget buildUI();
+}
+
+/// Registry for app-specific UI implementations
+class AppUIRegistry {
+  static final Map<String, AppInterface> _appInterfaces = {};
+  
+  /// Register an app's UI implementation
+  static void registerAppInterface(String packageName, AppInterface appInterface) {
+    _appInterfaces[packageName] = appInterface;
+  }
+  
+  /// Get an app's UI implementation
+  static AppInterface? getAppInterface(String packageName) {
+    return _appInterfaces[packageName];
+  }
+}
+
+/// Calculator state management class (this would ideally be in the app's code)
+class CalculatorState {
+  String _displayValue = '0';
+  double? _firstOperand;
+  String? _pendingOperator;
+  bool _waitingForOperand = false;
+
+  String get displayValue => _displayValue;
+
+  /// Handles input of a number
+  void inputDigit(String digit) {
+    if (_waitingForOperand) {
+      _displayValue = digit;
+      _waitingForOperand = false;
+    } else {
+      _displayValue = _displayValue == '0' ? digit : _displayValue + digit;
+    }
+  }
+
+  /// Handles decimal point input
+  void inputDecimal() {
+    if (_waitingForOperand) {
+      _displayValue = '0.';
+      _waitingForOperand = false;
+    } else if (!_displayValue.contains('.')) {
+      _displayValue = _displayValue + '.';
+    }
+  }
+
+  /// Handles input of an operator
+  void inputOperator(String op) {
+    if (_firstOperand == null) {
+      _firstOperand = double.tryParse(_displayValue);
+    } else if (!_waitingForOperand) {
+      String result = performCalculation();
+      _firstOperand = double.tryParse(result);
+    }
+    
+    _pendingOperator = op;
+    _waitingForOperand = true;
+  }
+
+  /// Performs the calculation based on the current operator
+  String performCalculation() {
+    if (_firstOperand == null || _pendingOperator == null) {
+      return _displayValue;
+    }
+
+    double inputValue = double.tryParse(_displayValue) ?? 0.0;
+    double result = 0.0;
+
+    switch (_pendingOperator) {
+      case '+':
+        result = _firstOperand! + inputValue;
+        break;
+      case '-':
+        result = _firstOperand! - inputValue;
+        break;
+      case '*':
+        result = _firstOperand! * inputValue;
+        break;
+      case '/':
+        if (inputValue == 0) {
+          return 'Error';
+        }
+        result = _firstOperand! / inputValue;
+        break;
+      default:
+        result = inputValue;
+    }
+
+    // Format the result to remove unnecessary decimal places
+    if (result == result.toInt()) {
+      return result.toInt().toString();
+    } else {
+      return result.toString();
+    }
+  }
+
+  /// Calculates the final result when equals is pressed
+  void calculateResult() {
+    if (_firstOperand != null && _pendingOperator != null) {
+      _displayValue = performCalculation();
+      _firstOperand = null;
+      _pendingOperator = null;
+      _waitingForOperand = true;
+    }
+  }
+
+  /// Clears all calculator data
+  void clearAll() {
+    _displayValue = '0';
+    _firstOperand = null;
+    _pendingOperator = null;
+    _waitingForOperand = false;
+  }
+
+  /// Handles special functions like percentage
+  void inputPercentage() {
+    double currentValue = double.tryParse(_displayValue) ?? 0.0;
+    _displayValue = (currentValue / 100).toString();
+  }
+
+  /// Handles sign change (+/-)
+  void toggleSign() {
+    double currentValue = double.tryParse(_displayValue) ?? 0.0;
+    currentValue = -currentValue;
+    
+    if (currentValue == currentValue.toInt()) {
+      _displayValue = currentValue.toInt().toString();
+    } else {
+      _displayValue = currentValue.toString();
+    }
+  }
+}
+
+/// Calculator app implementation
+class CalculatorAppInterface extends AppInterface {
+  @override
+  Widget buildUI() {
+    return const CalculatorWidget();
+  }
+}
+
+/// Calculator UI widget
+class CalculatorWidget extends StatefulWidget {
+  const CalculatorWidget({Key? key}) : super(key: key);
+
+  @override
+  State<CalculatorWidget> createState() => _CalculatorWidgetState();
+}
+
+class _CalculatorWidgetState extends State<CalculatorWidget> {
+  final CalculatorState _calculator = CalculatorState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Text('Calculator', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        Container(
+          margin: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.lightGreen[100],
+                child: Text(
+                  _calculator.displayValue,
+                  style: const TextStyle(fontSize: 32, color: Colors.black),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildCalculatorButtons(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalculatorButtons() {
+    return Column(
+      children: [
+        _buildRow(['C', '7', '8', '9', '/']),
+        _buildRow(['+/-', '4', '5', '6', '*']),
+        _buildRow(['%', '1', '2', '3', '-']),
+        _buildRow(['0', '.', '=', '+']),
+      ],
+    );
+  }
+
+  Widget _buildRow(List<String> buttons) {
+    List<Widget> buttonWidgets = buttons.map((button) {
+      return Expanded(
+        child: Container(
+          margin: const EdgeInsets.all(5),
+          child: ElevatedButton(
+            onPressed: () => _handleButtonPress(button),
+            child: Text(button, style: const TextStyle(fontSize: 20)),
+          ),
+        ),
+      );
+    }).toList();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: buttonWidgets,
+    );
+  }
+
+  void _handleButtonPress(String button) {
+    setState(() {
+      switch (button) {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+          _calculator.inputDigit(button);
+          break;
+        case '.':
+          _calculator.inputDecimal();
+          break;
+        case '+':
+          _calculator.inputOperator('+');
+          break;
+        case '-':
+          _calculator.inputOperator('-');
+          break;
+        case '*':
+          _calculator.inputOperator('*');
+          break;
+        case '/':
+          _calculator.inputOperator('/');
+          break;
+        case '=':
+          _calculator.calculateResult();
+          break;
+        case 'C':
+          _calculator.clearAll();
+          break;
+        case '+/-':
+          _calculator.toggleSign();
+          break;
+        case '%':
+          _calculator.inputPercentage();
+          break;
+      }
+    });
+  }
+}
+
 /// Main entry point for the FlutterX Container
 class FlutterXContainer extends StatefulWidget {
   const FlutterXContainer({Key? key}) : super(key: key);
@@ -32,6 +293,15 @@ class _FlutterXContainerState extends State<FlutterXContainer> {
       packageManager: _packageManager,
       permissionManager: _permissionManager,
     );
+    
+    // Register app-specific UI widgets
+    _registerAppUIWidgets();
+  }
+  
+  /// Register UI widgets for specific apps
+  void _registerAppUIWidgets() {
+    // Register calculator app UI
+    AppUIRegistry.registerAppInterface('com.flutterx.calculator', CalculatorAppInterface());
   }
 
   @override
@@ -530,6 +800,45 @@ class _AppScreenState extends State<AppScreen> {
       case 'clearAllData':
         _clearAllData();
         break;
+      case 'show_dialog':
+        //ShowDialog
+  
+        break;
+      default:
+        // Handle other actions as needed
+        print('Unknown action: $action');
+    }
+  }
+  
+  /// Show a popup dialog with specified content
+  void _showPopup(String message) {
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Popup Message'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+  
+  /// Adapter function to match the new onAction signature
+  void _handleActionAdapter(String action, [String? message]) {
+    switch (action) {
+      case 'clearAllData':
+        _clearAllData();
+        break;
+      case 'showPopup':
+        String popupMessage = message ?? 'Default message';
+        _showPopup(popupMessage);
+        break;
       default:
         // Handle other actions as needed
         print('Unknown action: $action');
@@ -606,6 +915,15 @@ class _AppScreenState extends State<AppScreen> {
   }
   
   Widget _buildAppInterface() {
+    // First, check if the app has registered a custom UI implementation
+    AppInterface? appInterface = AppUIRegistry.getAppInterface(widget.appInstance.package.packageName);
+    
+    if (appInterface != null) {
+      // Use the app's custom UI implementation
+      return appInterface.buildUI();
+    }
+    
+    // Fallback to XML interface if no custom UI is registered
     if (_interfaceContent == null) {
       return const Center(child: Text('No interface content to display'));
     }
@@ -614,7 +932,7 @@ class _AppScreenState extends State<AppScreen> {
       // Parse the XML content into Flutter widgets
       final widgetBuilder = _AppWidgetBuilder(
         widget.appManager,
-        onAction: _handleAction,
+        onAction: _handleActionAdapter,
       );
       return widgetBuilder.parseXmlInterface(_interfaceContent!);
     } catch (e) {
@@ -643,7 +961,7 @@ class _AppScreenState extends State<AppScreen> {
 /// Helper class to build widgets from XML for the app screen
 class _AppWidgetBuilder {
   final AppManager _appManager;
-  final Function(String action)? onAction;
+  final Function(String action, [String? message])? onAction;
   
   _AppWidgetBuilder(this._appManager, {this.onAction});
 
@@ -676,6 +994,13 @@ class _AppWidgetBuilder {
         return Column(
           mainAxisAlignment: _parseMainAxisAlignment(element.getAttribute('mainAxisAlignment') ?? 'start'),
           crossAxisAlignment: _parseCrossAxisAlignment(element.getAttribute('crossAxisAlignment') ?? 'center'),
+          children: element.children
+              .whereType<xml.XmlElement>()
+              .map(_convertXmlElementToWidget)
+              .toList(),
+        );
+      case 'listview':
+        return ListView(
           children: element.children
               .whereType<xml.XmlElement>()
               .map(_convertXmlElementToWidget)
@@ -895,9 +1220,21 @@ class _AppWidgetBuilder {
   void _executeAction(String action) {
     print('Executing action: $action');
     
+    // Parse action to extract potential parameters
+    String actionName = action;
+    String? parameter;
+    
+    // Check if action contains parameter (format: actionName:paramValue)
+    if (action.contains(':')) {
+      int colonIndex = action.indexOf(':');
+      actionName = action.substring(0, colonIndex);
+      parameter = action.substring(colonIndex + 1);
+    }
+    
     // If there's a callback for special actions, use it
     if (onAction != null) {
-      onAction!(action);
+      // Pass the action name and parameter separately
+      onAction!(actionName, parameter);
     }
     // In a real implementation, this would execute the Dart code associated with the action
   }

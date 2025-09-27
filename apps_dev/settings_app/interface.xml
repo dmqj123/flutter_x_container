@@ -1,7 +1,7 @@
 <container>
   <column>
     <text size="24" weight="bold">FlutterX Container Settings</text>
-    <row margin="16,0,0,0">
+    <column margin="16,0,0,0">
       <container margin="0,16,0,0">
         <text size="18" weight="bold">General</text>
         
@@ -62,6 +62,6 @@
         
         <button id="check_updates" margin="0,16,0,0" onPressed="checkForUpdates">Check for Updates</button>
       </container>
-    </row>
+    </column>
   </column>
 </container>

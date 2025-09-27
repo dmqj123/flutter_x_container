@@ -2,7 +2,7 @@
     <text size="24" weight="bold">Hello World App</text>
     <text size="16" color="grey">Welcome to FlutterX Container</text>
     <container margin="20,20,20,20">
-        <button onPressed="clickMe">Click Me!</button>
+        <button onPressed="showPopup:Hello from HelloWorld App!{get_text()}">Click Me!</button>
     </container>
-    <text size="12" color="grey">This is a sample app</text>
+    <text id="display" size="12" color="grey" text="{get_text()}">0</text>
 </column>
