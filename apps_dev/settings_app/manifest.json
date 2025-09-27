@@ -1,0 +1,17 @@
+{
+  "packageName": "com.flutterx.settings",
+  "name": "Settings",
+  "version": "1.0.0",
+  "iconPath": "assets/icon.png",
+  "permissions": [
+    {
+      "name": "system_settings",
+      "level": "PermissionLevel.administrator",
+      "description": "Change system settings"
+    }
+  ],
+  "interfacePath": "interface.xml",
+  "codePath": "main.dart",
+  "packagePath": "",
+  "isSystemApp": true
+}
