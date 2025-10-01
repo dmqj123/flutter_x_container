@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_x_container/system.dart';
+import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
 
 import 'pages/homepage.dart';
 
@@ -34,9 +36,14 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   late AnimationController _controller;
   late Animation<double> _animation;
 
+  void GetPrefs() async {
+    prefs = await SharedPreferences.getInstance();
+  }
+
   @override
   void initState() {
     super.initState();
+    GetPrefs();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,

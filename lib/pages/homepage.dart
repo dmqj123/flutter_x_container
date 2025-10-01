@@ -1,7 +1,12 @@
+import 'dart:io' show File;
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_x_container/enum.dart';
 
 import 'settingspage.dart';
 import 'package:flutter_x_container/class.dart';
+import 'package:flutter_x_container/app_manage.dart';
 
 bool is_home = true;
 
@@ -12,19 +17,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-// 模拟应用数据
-List<Applnk> apps = [
-  Applnk('HelloWorld',
-      Image.network("https://kooly.faistudio.top/material/icon.png"))
-];
-
 class _HomePageState extends State<HomePage> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: is_home ? 0 : 1);
+  }
+
   Widget _app_view() {
     //TODO 实现应用视图
-    return Text("Appview");
+    return const Center(
+      child: Text("Appview"),
+    );
   }
 
   Widget _build_apps_list() {
+    List<Applnk> apps = GetAppList();
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: GridView.builder(
@@ -42,6 +52,9 @@ class _HomePageState extends State<HomePage> {
             onTap: () => {
               setState(() {
                 is_home = false;
+                _pageController.animateToPage(1,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeInOut);
               })
               //TODO 跳转应用
             },
@@ -49,32 +62,52 @@ class _HomePageState extends State<HomePage> {
               //TODO 应用长按菜单
               //从页面下方弹出一个小选择框，选择打开或卸载
               showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  return ListView(
-                    shrinkWrap: true,
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.delete),
-                        title: const Text('卸载'),
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.cancel),
-                        title: const Text('取消'),
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ].map((child) => Padding(
-                      padding: const EdgeInsets.all(2.5),
-                      child: child,
-                    )).toList(),
-                  );
-                }
-              )
+                  context: context,
+                  builder: (BuildContext context) {
+                    return ListView(
+                      shrinkWrap: true,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.delete),
+                          title: const Text('卸载'),
+                          onTap: () {
+                            if(app.bundle_name != null){
+                              UnInstallApp(app.bundle_name!);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('卸载成功'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            }
+                            setState(() {
+                              
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.info),
+                          title: const Text('详细信息'),
+                          onTap: () {
+                            //TODO 应用详细信息显示
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.cancel),
+                          title: const Text('取消'),
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ]
+                          .map((child) => Padding(
+                                padding: const EdgeInsets.all(2.5),
+                                child: child,
+                              ))
+                          .toList(),
+                    );
+                  })
             },
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -82,7 +115,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(
                   width: 40,
                   height: 40,
-                  child: app.icon,
+                  child: (File(app.icon_path).existsSync()) ? Image.file(File(app.icon_path)) : const Icon(Icons.error),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -142,17 +175,83 @@ class _HomePageState extends State<HomePage> {
           leading: (is_home)
               ? IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: () {},
+                  onPressed: () async {
+                    //询问应用包
+                    FilePickerResult? picker_result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['zip','fcx'],
+                      allowMultiple: false
+                    );
+                    if(picker_result == null || picker_result.paths.isEmpty){
+                      return;
+                    }
+                    if (await InstallApp(picker_result!.paths[0]!) ==
+                        AppInstall_Result.Success) {
+                      //弹窗：安装成功
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                                title: const Text('安装成功'),
+                                content: const Text('应用安装成功'),
+                                actions: [
+                                  TextButton(
+                                      child: const Text('确定'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      })
+                                ]);
+                          });
+                        setState(() {
+                          
+                        });
+                    } else {
+                      //弹窗：安装失败
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                                title: const Text('安装失败'),
+                                content: const Text('应用安装失败'),
+                                actions: [
+                                  TextButton(
+                                      child: const Text('确定'), onPressed: () {
+                                        Navigator.of(context).pop();
+                                      })
+                                ]);
+                          });
+                    }
+                  },
                 )
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () {
                     setState(() {
                       is_home = true;
+                      _pageController.animateToPage(0,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeInOut);
                     });
                   },
                 ),
         ),
-        body: (is_home) ? _build_apps_list() : _app_view());
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              is_home = index == 0;
+            });
+          },
+          children: [
+            _build_apps_list(),
+            _app_view(),
+          ],
+        ));
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 }

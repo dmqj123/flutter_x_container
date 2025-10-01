@@ -1,0 +1,129 @@
+import 'dart:io';
+import 'dart:convert';
+import 'dart:ui' show Image;
+import 'package:flutter/material.dart';
+import 'package:archive/archive.dart';
+import 'package:flutter_x_container/class.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'package:flutter_x_container/enum.dart';
+import 'package:flutter_x_container/system.dart';
+
+List<Applnk> apps_list = [
+];
+
+void SaveAppList() async {
+  //将apps_list保存到preferences中
+  List<Map<String, dynamic>> encodableList = apps_list.map((app) => app.toJson()).toList();
+  prefs.setString("app_list_json", json.encode(encodableList));
+}
+
+List<Applnk> GetAppList(){
+  //读取preferences中的app_list_json
+  String app_list_json = prefs.getString("app_list_json") ?? "[]";
+  apps_list = (json.decode(app_list_json) as List)
+      .map((app) => Applnk.fromJson(app as Map<String, dynamic>))
+      .toList();
+  return apps_list;
+}
+
+Future<void> UnInstallApp(String app_bundle_name) async {
+  Directory appDir = await getApplicationDocumentsDirectory();
+  String appPath = '${appDir.path}/FlutterXContainer/apps/${app_bundle_name}/';
+  File(appPath).deleteSync(recursive: true);
+
+  apps_list.removeWhere((app) => app.bundle_name == app_bundle_name);
+  SaveAppList();
+}
+
+Future<AppInstall_Result> InstallApp(String app_path) async {
+  //先检查路径是否存在
+  if (await !File(app_path).existsSync()) {
+    //TODO 找不到文件处理
+    return AppInstall_Result.Failed;
+  }
+  //将文件解压缩到provide的临时目录下
+  Directory tempDir = await getTemporaryDirectory();
+  //获取时间戳
+  String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+  String tempPath = '${tempDir.path}/fxcapps/${timestamp}/';
+  //使用archive
+  Archive archive = ZipDecoder().decodeBytes(File(app_path).readAsBytesSync());
+  //保存解压结果到临时目录
+  for (ArchiveFile file in archive) {
+    String filename = '${tempPath}${file.name}';
+    if (file.isFile) {
+      List<int> data = file.content as List<int>;
+      File(filename)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(data);
+    } else {
+      Directory(filename).create(recursive: true);
+    }
+  }
+  if (!File(tempPath + "app.json").existsSync()) {
+    //TODO 找不到文件处理
+    return AppInstall_Result.Failed;
+  }
+  String app_json = File(tempPath + "app.json").readAsStringSync();
+  // 解析 JSON 获取 name 字段
+  Map<String, dynamic> appInfo = json.decode(app_json);
+  Appbundle appbundle = Appbundle(
+      appInfo['name'],
+      appInfo['bundle_name'],
+      appInfo['version'],
+      appInfo['icon'],
+      appInfo['description'],
+      appInfo['author'],
+      appInfo['min_version'],
+      appInfo['permissions'],
+      appInfo['main_code']
+      );
+  if(!File(tempPath + appbundle.icon_path).existsSync()) {
+    //TODO 找不到图标处理
+    return AppInstall_Result.Failed;
+  }
+  if(!File(tempPath + appbundle.main_code_path).existsSync()){
+    //TODO 找不到主程序处理
+    return AppInstall_Result.Failed;
+  }
+  //将临时目录中的文件移动到provide的文件目录的app目录下的已包名为名称的文件夹下
+  //先通过provider获取文件目录
+  Directory appDir = await getApplicationDocumentsDirectory();
+  String appPath = '${appDir.path}/FlutterXContainer/apps/${appbundle.bundle_name}/';
+  //移动目录中的所有文件到新目录
+  Directory(appPath).createSync(recursive: true);
+
+  // 复制整个目录中的所有文件，而不仅仅是app.json
+  Directory tempDirectory = Directory(tempPath);
+  await for (FileSystemEntity entity in tempDirectory.list(recursive: true)) {
+    if (entity is File) {
+      String relativePath = entity.path.replaceFirst(tempPath, '');
+      String destinationPath = appPath + relativePath;
+      // 手动创建目录结构，不使用path库
+      int lastSeparatorIndex = destinationPath.lastIndexOf('/') > destinationPath.lastIndexOf('\\') 
+          ? destinationPath.lastIndexOf('/') 
+          : destinationPath.lastIndexOf('\\');
+      if (lastSeparatorIndex != -1) {
+        String dirPath = destinationPath.substring(0, lastSeparatorIndex);
+        Directory(dirPath).createSync(recursive: true);
+      }
+      await entity.copy(destinationPath);
+    } else if (entity is Directory) {
+      String relativePath = entity.path.replaceFirst(tempPath, '');
+      String destinationPath = appPath + relativePath;
+      Directory(destinationPath).createSync(recursive: true);
+    }
+  }
+
+  File(tempPath).deleteSync(recursive: true);
+
+  //保存应用
+  if(apps_list.any((app) => app.bundle_name == appbundle.bundle_name)){
+    apps_list.removeWhere((app) => app.bundle_name == appbundle.bundle_name);
+  }
+  apps_list.add(Applnk(appbundle.name, appPath + appbundle.icon_path, appbundle.bundle_name));
+  SaveAppList();
+
+  return AppInstall_Result.Success;
+}
