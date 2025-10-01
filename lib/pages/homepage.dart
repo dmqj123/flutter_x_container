@@ -20,21 +20,33 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late PageController _pageController;
 
+  String now_app_bundle_name = "";
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: is_home ? 0 : 1);
   }
 
-  Widget _app_view() {
+  Future<Widget> _app_view() async {
+    OpenAppResult _app_view = await OpenApp(now_app_bundle_name);
+
+    if(!_app_view.success){
+      return Center(
+        child: Text("错误：" + (_app_view.message ?? "")),
+      );
+    }
+
     //TODO 实现应用视图
-    return const Center(
-      child: Text("Appview"),
+    return Center(
+      child: _app_view.page ?? const Text("加载中..."),
     );
   }
 
+  late List<Applnk> apps;
+
   Widget _build_apps_list() {
-    List<Applnk> apps = GetAppList();
+    apps = GetAppList();
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: GridView.builder(
@@ -46,21 +58,20 @@ class _HomePageState extends State<HomePage> {
         ),
         itemCount: apps.length,
         itemBuilder: (context, index) {
-          final app = apps[index];
+          final Applnk app = apps[index];
           return Card(
               child: InkWell(
             onTap: () => {
               setState(() {
+                now_app_bundle_name = app.bundle_name!;
                 is_home = false;
                 _pageController.animateToPage(1,
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeInOut);
               })
-              //TODO 跳转应用
+              
             },
             onLongPress: () => {
-              //TODO 应用长按菜单
-              //从页面下方弹出一个小选择框，选择打开或卸载
               showModalBottomSheet(
                   context: context,
                   builder: (BuildContext context) {
@@ -71,7 +82,7 @@ class _HomePageState extends State<HomePage> {
                           leading: const Icon(Icons.delete),
                           title: const Text('卸载'),
                           onTap: () {
-                            if(app.bundle_name != null){
+                            if (app.bundle_name != null) {
                               UnInstallApp(app.bundle_name!);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -80,9 +91,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               );
                             }
-                            setState(() {
-                              
-                            });
+                            setState(() {});
                             Navigator.pop(context);
                           },
                         ),
@@ -115,7 +124,9 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(
                   width: 40,
                   height: 40,
-                  child: (File(app.icon_path).existsSync()) ? Image.file(File(app.icon_path)) : const Icon(Icons.error),
+                  child: (File(app.icon_path).existsSync())
+                      ? Image.file(File(app.icon_path))
+                      : const Icon(Icons.error),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -135,6 +146,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    apps = GetAppList();
     return Scaffold(
         appBar: AppBar(
           title: (is_home) ? null : const Text("App"),
@@ -177,12 +189,12 @@ class _HomePageState extends State<HomePage> {
                   icon: const Icon(Icons.add),
                   onPressed: () async {
                     //询问应用包
-                    FilePickerResult? picker_result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['zip','fcx'],
-                      allowMultiple: false
-                    );
-                    if(picker_result == null || picker_result.paths.isEmpty){
+                    FilePickerResult? picker_result = await FilePicker.platform
+                        .pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['zip', 'fcx'],
+                            allowMultiple: false);
+                    if (picker_result == null || picker_result.paths.isEmpty) {
                       return;
                     }
                     if (await InstallApp(picker_result!.paths[0]!) ==
@@ -202,9 +214,7 @@ class _HomePageState extends State<HomePage> {
                                       })
                                 ]);
                           });
-                        setState(() {
-                          
-                        });
+                      setState(() {});
                     } else {
                       //弹窗：安装失败
                       showDialog(
@@ -215,7 +225,8 @@ class _HomePageState extends State<HomePage> {
                                 content: const Text('应用安装失败'),
                                 actions: [
                                   TextButton(
-                                      child: const Text('确定'), onPressed: () {
+                                      child: const Text('确定'),
+                                      onPressed: () {
                                         Navigator.of(context).pop();
                                       })
                                 ]);
@@ -224,7 +235,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 )
               : IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(Icons.home),
                   onPressed: () {
                     setState(() {
                       is_home = true;
@@ -235,18 +246,32 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
         ),
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() {
-              is_home = index == 0;
-            });
-          },
-          children: [
-            _build_apps_list(),
-            _app_view(),
-          ],
-        ));
+        body: (apps.length == 0)
+            ? const Center(
+                child: Column(children: [Text("暂无应用"), Icon(Icons.widgets)]),
+              )
+            : PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    is_home = index == 0;
+                  });
+                },
+                children: [
+                  _build_apps_list(),
+                  FutureBuilder<Widget>(
+                    future: _app_view(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done &&
+                          snapshot.hasData) {
+                        return snapshot.data!;
+                      } else {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                    },
+                  ),
+                ],
+              ));
   }
 
   @override

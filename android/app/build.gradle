@@ -27,6 +27,7 @@ android {
     namespace = "com.dmqj.flutter_x_container"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    minSdkVersion = 19
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

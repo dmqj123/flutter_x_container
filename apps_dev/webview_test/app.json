@@ -1,0 +1,12 @@
+{
+    "name" : "WebViewT",
+    "bundle_name" : "com.exampe.WebViewT",
+    "version" : "1.0.0",
+    "icon" : "icon.png",
+    "app_type" : "web",
+    "description" : "A simple HelloW demo",
+    "author" : "example",
+    "min_version" : "1.0.0",
+    "permissions" : "common",
+    "main_code" : "index.html"
+}

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_x_container/enum.dart';
 import 'package:flutter_x_container/system.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 List<Applnk> apps_list = [];
 
@@ -140,6 +141,7 @@ Future<AppInstall_Result> InstallApp(String app_path) async {
 Future<OpenAppResult> OpenApp(String app_bundle_name) async {
   Directory appDir = await getApplicationDocumentsDirectory();
   String appPath = '${appDir.path}/FlutterXContainer/apps/${app_bundle_name}/';
+  print(appPath);
   if (await !File(appPath + "app.json").existsSync()) {
     return OpenAppResult(false, "error:app.json not found");
   }
@@ -151,18 +153,54 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
   String main_codes =
       await File(appPath + appbundle.main_code_path).readAsStringSync();
 
-/*
-  //使用flutter_eval库编译代码
-  final Compiler compiler = Compiler();
-  //compiler.addPlugin(flutterEvalPlugin);
-  final program = compiler.compile({
-    'my_pack': {
-      'main.dart': """int calculate() {
-        return 2 + 2;
-      }"""
-    }
-  });
-  print(eval(main_codes,function: 'build',plugins: [flutterEvalPlugin]));*/
+  //获取代码文件后缀
+  String code_suffix = appbundle.main_code_path.split('.').last;
 
-  return OpenAppResult(true);
+  late Widget app_page;
+
+  switch (code_suffix) {
+    case "dart":
+      //使用dart_eval库编译代码
+      //实验性代码
+      /*
+      final Compiler compiler = Compiler();
+      //compiler.addPlugin(flutterEvalPlugin);
+      final program = compiler.compile({
+      'my_pack': {
+        'main.dart': """int calculate() {
+          return 2 + 2;
+        }"""
+      }
+      });
+      print(eval(main_codes,function: 'build',plugins: [flutterEvalPlugin]));*/
+      break;
+    case "js":
+      //运行js代码
+      break;
+    case "html":
+      //使用webview运行html代码
+      WebViewController web_controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      //..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // 页面加载进度变化时会调用
+          },
+          onPageStarted: (String url) {
+            // 页面开始加载时调用
+          },
+          onPageFinished: (String url) {
+            // 页面加载完成时调用
+          },
+          onWebResourceError: (WebResourceError error) {
+            // 页面加载出错时调用
+          },
+        ),
+      );
+      web_controller.loadHtmlString(main_codes);
+      app_page = WebViewWidget(controller: web_controller);
+      break;
+  }
+  return OpenAppResult(true, null, app_page);
 }
