@@ -8,7 +8,7 @@
 PRODUCT_NAME = flutter_x_container
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.flutterXContainer
+PRODUCT_BUNDLE_IDENTIFIER = com.dmqj.flutterXContainer
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 Dmqj. All rights reserved.

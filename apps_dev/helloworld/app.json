@@ -3,6 +3,7 @@
     "bundle_name" : "com.example.helloworld",
     "version" : "1.0.0",
     "icon" : "icon.png",
+    "app_type" : "fxc",
     "description" : "A simple HelloWorld demo",
     "author" : "example",
     "min_version" : "1.0.0",

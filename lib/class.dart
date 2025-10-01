@@ -1,5 +1,13 @@
 import 'package:flutter/widgets.dart';
 
+class OpenAppResult {
+  late final bool success;
+  late final String? message;
+  late final Widget? page;
+
+  OpenAppResult(this.success, [this.message, this.page]);
+}
+
 class Applnk {
   late final String name;
   late final String icon_path;
