@@ -176,8 +176,41 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       return OpenAppResult(false,"暂不支持dart语言");
       break;
     case "js":
-      //运行js代码
-      return OpenAppResult(false,"暂不支持js语言");
+      //运行js代码  TODO
+      late InAppWebViewController web_controller;
+      String UA = "FlutterXContainer/1.0.0 ";
+      
+      InAppWebView webview_widget = InAppWebView(
+        initialSettings: InAppWebViewSettings(
+          suppressesIncrementalRendering: false,
+          webViewAssetLoader: WebViewAssetLoader()..domain="file:///"+appPath, //BUG
+          disableContextMenu: true,//禁用右键菜单
+          javaScriptEnabled: true,
+          userAgent: UA,
+          useShouldOverrideUrlLoading: true,
+          allowsInlineMediaPlayback: true,
+          isInspectable: false, // 禁用 WebView 检查功能
+        ),
+        initialData: InAppWebViewInitialData(
+          data: main_codes,
+          mimeType: "text/html",
+          encoding: "utf-8",
+        ),
+        onWebViewCreated: (controller) async {
+          web_controller = controller;
+        },
+        onLoadStart: (controller, url) async {
+          // 页面开始加载时会调用
+        },
+        onLoadStop: (controller, url) async {
+          // 页面加载完成时会调用
+        },
+        onReceivedError: (controller, request, error) async {
+          // 页面加载出错时调用
+        },
+      );
+      
+      app_page = webview_widget;
       break;
     case "html":
       //使用webview运行html代码

@@ -21,13 +21,25 @@ class _HomePageState extends State<HomePage> {
   late PageController _pageController;
   String now_app_bundle_name = "";
   late Future<Widget> _appViewFuture;
+  
+  // 添加一个 Map 来缓存每个应用的 Future
+  final Map<String, Future<Widget>> _appViewFutureCache = {};
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: is_home ? 0 : 1);
     // 初始化一个默认的 Future，避免空值
-    _appViewFuture = Future.value(const Center(child: CircularProgressIndicator()));
+    _appViewFuture =
+        Future.value(const Center(child: CircularProgressIndicator()));
+  }
+  
+  // 新增方法：获取或创建应用视图的 Future
+  Future<Widget> _getCachedAppViewFuture(String bundleName) {
+    if (!_appViewFutureCache.containsKey(bundleName) || bundleName != now_app_bundle_name) {
+      _appViewFutureCache[bundleName] = _app_view();
+    }
+    return _appViewFutureCache[bundleName]!;
   }
 
   Future<Widget> _app_view() async {
@@ -55,8 +67,8 @@ class _HomePageState extends State<HomePage> {
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4, // 每行4个应用
           childAspectRatio: 1.0, // 宽高比
-          crossAxisSpacing: 8.0, // 水平间距
-          mainAxisSpacing: 8.0, // 垂直间距
+          crossAxisSpacing: 5.0, // 水平间距
+          mainAxisSpacing: 5.0, // 垂直间距
         ),
         itemCount: apps.length,
         itemBuilder: (context, index) {
@@ -126,7 +138,11 @@ class _HomePageState extends State<HomePage> {
                   width: 40,
                   height: 40,
                   child: (File(app.icon_path).existsSync())
-                      ? Image.file(File(app.icon_path))
+                      ? Image.file(
+                          File(app.icon_path),
+                          cacheWidth: 160,
+                          fit: BoxFit.cover,
+                        )
                       : const Icon(Icons.error),
                 ),
                 const SizedBox(height: 8),
@@ -263,15 +279,17 @@ class _HomePageState extends State<HomePage> {
                 onPageChanged: (index) {
                   setState(() {
                     is_home = index == 0;
-                    // 当切换到应用视图时，才创建新的 Future
+                    // 当切换到应用视图时，使用缓存的 Future 或创建新的
                     if (index == 1 && now_app_bundle_name.isNotEmpty) {
-                      _appViewFuture = _app_view();
+                      //如果对应包名的PageStorageKey不存在，则创建新的
+                      _appViewFuture = _getCachedAppViewFuture(now_app_bundle_name);
                     }
                   });
                 },
                 children: [
                   _build_apps_list(),
                   FutureBuilder<Widget>(
+                    key: PageStorageKey(now_app_bundle_name),
                     future: _appViewFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done &&

@@ -56,3 +56,14 @@ class Appbundle {
       this.permissions,
       this.main_code_path);
 }
+
+class ApiCallResult{
+  String? return_value;
+  Map<dynamic, dynamic>? Function() api_func = ()=>{}; //函数操作
+
+  static Map<dynamic, dynamic>? _defaultApiFunc() {
+    return {};
+  }
+
+  ApiCallResult([this.return_value, this.api_func=_defaultApiFunc]);
+}
