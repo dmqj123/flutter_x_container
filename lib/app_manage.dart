@@ -186,6 +186,8 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       
       InAppWebView webview_widget = InAppWebView(
         initialSettings: InAppWebViewSettings(
+          suppressesIncrementalRendering: false,
+          webViewAssetLoader: WebViewAssetLoader()..domain="file:///"+appPath, //BUG
           disableContextMenu: true,//禁用右键菜单
           javaScriptEnabled: true,
           userAgent: UA,
