@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_x_container/class.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:webview_windows/webview_windows.dart';
+import 'package:webview_flutter/webview_flutter.dart' as webview_flutter;
+import 'package:webview_windows/webview_windows.dart' as webview_windows;
 
 import 'package:flutter_x_container/enum.dart';
 import 'package:flutter_x_container/system.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 List<Applnk> apps_list = [];
 
@@ -174,33 +174,44 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       }
       });
       print(eval(main_codes,function: 'build',plugins: [flutterEvalPlugin]));*/
+      return OpenAppResult(false,"暂不支持dart语言");
       break;
     case "js":
       //运行js代码
+      return OpenAppResult(false,"暂不支持js语言");
       break;
     case "html":
       //使用webview运行html代码
-      WebViewController web_controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      //..setBackgroundColor(const Color(0x00000000))
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // 页面加载进度变化时会调用
-          },
-          onPageStarted: (String url) {
-            // 页面开始加载时调用
-          },
-          onPageFinished: (String url) {
-            // 页面加载完成时调用
-          },
-          onWebResourceError: (WebResourceError error) {
-            // 页面加载出错时调用
-          },
-        ),
-      );
-      web_controller.loadHtmlString(main_codes);
-      app_page = WebViewWidget(controller: web_controller);
+      if (Platform.isWindows) {
+        webview_windows.WebviewController web_controller =
+            webview_windows.WebviewController();
+        await web_controller.initialize();
+        await web_controller.loadStringContent(main_codes);
+        app_page = webview_windows.Webview(web_controller);
+      } else if (Platform.isMacOS || Platform.isIOS || Platform.isAndroid) {
+        webview_flutter.WebViewController web_controller =
+            webview_flutter.WebViewController()
+              ..setJavaScriptMode(webview_flutter.JavaScriptMode.unrestricted)
+              //..setBackgroundColor(const Color(0x00000000))
+              ..setNavigationDelegate(
+                webview_flutter.NavigationDelegate(
+                  onProgress: (int progress) {
+                    // 页面加载进度变化时会调用
+                  },
+                  onPageStarted: (String url) {
+                    // 页面开始加载时调用
+                  },
+                  onPageFinished: (String url) {
+                    // 页面加载完成时调用
+                  },
+                  onWebResourceError: (webview_flutter.WebResourceError error) {
+                    // 页面加载出错时调用
+                  },
+                ),
+              );
+        web_controller.loadHtmlString(main_codes);
+        app_page = webview_flutter.WebViewWidget(controller: web_controller);
+      }
       break;
   }
   return OpenAppResult(true, null, app_page);
