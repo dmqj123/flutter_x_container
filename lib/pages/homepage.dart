@@ -19,27 +19,29 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late PageController _pageController;
-
   String now_app_bundle_name = "";
+  late Future<Widget> _appViewFuture;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: is_home ? 0 : 1);
+    // 初始化一个默认的 Future，避免空值
+    _appViewFuture = Future.value(const Center(child: Text("选择一个应用")));
   }
 
   Future<Widget> _app_view() async {
-    OpenAppResult _app_view = await OpenApp(now_app_bundle_name);
+    OpenAppResult result = await OpenApp(now_app_bundle_name);
 
-    if(!_app_view.success){
+    if (!result.success) {
       return Center(
-        child: Text("错误：" + (_app_view.message ?? "")),
+        child: Text("错误：" + (result.message ?? "")),
       );
     }
 
     //TODO 实现应用视图
     return Center(
-      child: _app_view.page ?? const Text("加载中..."),
+      child: result.page ?? const Text("加载中..."),
     );
   }
 
@@ -69,7 +71,6 @@ class _HomePageState extends State<HomePage> {
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeInOut);
               })
-              
             },
             onLongPress: () => {
               showModalBottomSheet(
@@ -142,6 +143,12 @@ class _HomePageState extends State<HomePage> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -256,16 +263,22 @@ class _HomePageState extends State<HomePage> {
                 onPageChanged: (index) {
                   setState(() {
                     is_home = index == 0;
+                    // 当切换到应用视图时，才创建新的 Future
+                    if (index == 1 && now_app_bundle_name.isNotEmpty) {
+                      _appViewFuture = _app_view();
+                    }
                   });
                 },
                 children: [
                   _build_apps_list(),
                   FutureBuilder<Widget>(
-                    future: _app_view(),
+                    future: _appViewFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done &&
                           snapshot.hasData) {
                         return snapshot.data!;
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('加载错误: ${snapshot.error}'));
                       } else {
                         return const Center(child: CircularProgressIndicator());
                       }
@@ -273,11 +286,5 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ));
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 }

@@ -142,7 +142,6 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
   WidgetsFlutterBinding.ensureInitialized(); //初始化WebView
   Directory appDir = await getApplicationDocumentsDirectory();
   String appPath = '${appDir.path}/FlutterXContainer/apps/${app_bundle_name}/';
-  print(appPath);
   if (await !File(appPath + "app.json").existsSync()) {
     return OpenAppResult(false, "error:app.json not found");
   }
