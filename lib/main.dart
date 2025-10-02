@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_x_container/system.dart';
 import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 import 'pages/homepage.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 禁用 WebView 调试功能，防止调试器中断
+  PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
+  
+  // 针对 Android 平台禁用 WebView 调试
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    await InAppWebViewController.setWebContentsDebuggingEnabled(false);
+  }
+  
   runApp(const MyApp());
 }
 

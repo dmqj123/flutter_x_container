@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_x_container/class.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:webview_flutter/webview_flutter.dart' as webview_flutter;
-import 'package:webview_windows/webview_windows.dart' as webview_windows;
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'package:flutter_x_container/enum.dart';
 import 'package:flutter_x_container/system.dart';
@@ -140,6 +139,7 @@ Future<AppInstall_Result> InstallApp(String app_path) async {
 }
 
 Future<OpenAppResult> OpenApp(String app_bundle_name) async {
+  WidgetsFlutterBinding.ensureInitialized(); //初始化WebView
   Directory appDir = await getApplicationDocumentsDirectory();
   String appPath = '${appDir.path}/FlutterXContainer/apps/${app_bundle_name}/';
   print(appPath);
@@ -182,37 +182,37 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       break;
     case "html":
       //使用webview运行html代码
-      if (Platform.isWindows) {
-        webview_windows.WebviewController web_controller =
-            webview_windows.WebviewController();
-        await web_controller.initialize();
-        await web_controller.loadStringContent(main_codes);
-        app_page = webview_windows.Webview(web_controller);
-      } else if (Platform.isMacOS || Platform.isIOS || Platform.isAndroid) {
-        webview_flutter.WebViewController web_controller =
-            webview_flutter.WebViewController()
-              ..setJavaScriptMode(webview_flutter.JavaScriptMode.unrestricted)
-              //..setBackgroundColor(const Color(0x00000000))
-              ..setNavigationDelegate(
-                webview_flutter.NavigationDelegate(
-                  onProgress: (int progress) {
-                    // 页面加载进度变化时会调用
-                  },
-                  onPageStarted: (String url) {
-                    // 页面开始加载时调用
-                  },
-                  onPageFinished: (String url) {
-                    // 页面加载完成时调用
-                  },
-                  onWebResourceError: (webview_flutter.WebResourceError error) {
-                    // 页面加载出错时调用
-                  },
-                ),
-              );
-        web_controller.loadHtmlString(main_codes);
-        //web_controller.runJavaScript();
-        app_page = webview_flutter.WebViewWidget(controller: web_controller);
-      }
+      late InAppWebViewController web_controller;
+      String UA = "FlutterXContainer/1.0.0 ";
+      
+      InAppWebView webview_widget = InAppWebView(
+        initialSettings: InAppWebViewSettings(
+          userAgent: UA,
+          useShouldOverrideUrlLoading: true,
+          mediaPlaybackRequiresUserGesture: false,
+          allowsInlineMediaPlayback: true,
+          isInspectable: false, // 禁用 WebView 检查功能
+        ),
+        initialData: InAppWebViewInitialData(
+          data: main_codes,
+          mimeType: "text/html",
+          encoding: "utf-8",
+        ),
+        onWebViewCreated: (controller) async {
+          web_controller = controller;
+        },
+        onLoadStart: (controller, url) async {
+          // 页面开始加载时会调用
+        },
+        onLoadStop: (controller, url) async {
+          // 页面加载完成时会调用
+        },
+        onReceivedError: (controller, request, error) async {
+          // 页面加载出错时调用
+        },
+      );
+      
+      app_page = webview_widget;
       break;
   }
   return OpenAppResult(true, null, app_page);
