@@ -186,9 +186,10 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       
       InAppWebView webview_widget = InAppWebView(
         initialSettings: InAppWebViewSettings(
+          disableContextMenu: true,//禁用右键菜单
+          javaScriptEnabled: true,
           userAgent: UA,
           useShouldOverrideUrlLoading: true,
-          mediaPlaybackRequiresUserGesture: false,
           allowsInlineMediaPlayback: true,
           isInspectable: false, // 禁用 WebView 检查功能
         ),

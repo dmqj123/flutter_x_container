@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _pageController = PageController(initialPage: is_home ? 0 : 1);
     // 初始化一个默认的 Future，避免空值
-    _appViewFuture = Future.value(const Center(child: Text("选择一个应用")));
+    _appViewFuture = Future.value(const Center(child: CircularProgressIndicator()));
   }
 
   Future<Widget> _app_view() async {
