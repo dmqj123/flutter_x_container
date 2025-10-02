@@ -252,6 +252,7 @@ class _HomePageState extends State<HomePage> {
               )
             : PageView(
                 controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (index) {
                   setState(() {
                     is_home = index == 0;

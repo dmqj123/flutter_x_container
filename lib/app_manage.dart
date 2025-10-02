@@ -210,6 +210,7 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
                 ),
               );
         web_controller.loadHtmlString(main_codes);
+        //web_controller.runJavaScript();
         app_page = webview_flutter.WebViewWidget(controller: web_controller);
       }
       break;

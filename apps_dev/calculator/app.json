@@ -1,6 +1,6 @@
 {
-    "name" : "WebViewT",
-    "bundle_name" : "com.exampe.WebViewT",
+    "name" : "Calculator",
+    "bundle_name" : "com.exampe.Calculator",
     "version" : "1.0.0",
     "icon" : "icon.png",
     "app_type" : "web",
