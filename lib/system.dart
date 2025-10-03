@@ -1,9 +1,25 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_x_container/class.dart' show ApiCallResult;
 import 'package:shared_preferences/shared_preferences.dart';
 
 late final SharedPreferences prefs;
 
+Future<String?> runjs(String jscode) async {
+  late HeadlessInAppWebView headlessWebView;
+  late InAppWebViewController web_controller;
+  var result;
 
+  headlessWebView = HeadlessInAppWebView(
+    onWebViewCreated: (controller) async {
+      web_controller = controller;
+      // WebView 创建完成后执行 JavaScript
+      result = await web_controller.evaluateJavascript(source: jscode);
+    },
+  );
+  await headlessWebView.run();
+  return result.toString();
+}
 
 ApiCallResult? api_call(String api) {
   //先将由空格分开的api命令通过空格拆分成列表（如果空格由双引号包裹则计入一项）
@@ -21,9 +37,14 @@ ApiCallResult? api_call(String api) {
           //弹窗
           //获取内容参数
           List<String> args = cargs.sublist(1);
-          return ApiCallResult("success", ()=>{});
+          return ApiCallResult(true, null, () => {});
       }
       break;
+    case "ui_api":
+      break;
+    case "get_system_info":
+      break;
   }
-  //return;
+
+  return ApiCallResult(false);
 }

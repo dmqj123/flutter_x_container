@@ -58,6 +58,7 @@ class Appbundle {
 }
 
 class ApiCallResult{
+  late bool success;
   String? return_value;
   Map<dynamic, dynamic>? Function() api_func = ()=>{}; //函数操作
 
@@ -65,5 +66,5 @@ class ApiCallResult{
     return {};
   }
 
-  ApiCallResult([this.return_value, this.api_func=_defaultApiFunc]);
+  ApiCallResult(this.success,[this.return_value, this.api_func=_defaultApiFunc]);
 }
