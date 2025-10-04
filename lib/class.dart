@@ -44,6 +44,7 @@ class Appbundle {
   late final String min_version;
   late final String permissions;
   late final String main_code_path;
+  late final String app_type;
 
   Appbundle(
       this.name,
@@ -54,17 +55,19 @@ class Appbundle {
       this.author,
       this.min_version,
       this.permissions,
-      this.main_code_path);
+      this.main_code_path,
+      this.app_type);
 }
 
-class ApiCallResult{
+class ApiCallResult {
   late bool success;
   String? return_value;
-  Map<dynamic, dynamic>? Function() api_func = ()=>{}; //函数操作
+  Map<dynamic, dynamic>? Function() api_func = () => {}; //函数操作
 
   static Map<dynamic, dynamic>? _defaultApiFunc() {
     return {};
   }
 
-  ApiCallResult(this.success,[this.return_value, this.api_func=_defaultApiFunc]);
+  ApiCallResult(this.success,
+      [this.return_value, this.api_func = _defaultApiFunc]);
 }

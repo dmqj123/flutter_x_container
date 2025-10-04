@@ -1,167 +1,369 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>简单美观的计算器</title>
-  <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
 
-    .calculator {
-      background-color: #2c3e50;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      padding: 25px;
-      width: 320px;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
 
-    .display {
-      background-color: #34495e;
-      border: none;
-      border-radius: 10px;
-      color: white;
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-      padding: 15px;
-      text-align: right;
-      width: calc(100% - 30px);
-      box-sizing: border-box;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+        .calculator {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 700px;
+        }
 
-    .buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
+        .display {
+            text-align: right;
+            padding: 20px 10px;
+            font-size: 60px;
+            font-weight: 300;
+            color: white;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 10px;
+            min-height: 120px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
 
-    button {
-      background-color: #34495e;
-      border: none;
-      border-radius: 10px;
-      color: white;
-      cursor: pointer;
-      font-size: 1.5rem;
-      height: 60px;
-      transition: all 0.2s ease;
-    }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            flex: 1;
+        }
 
-    button:hover {
-      background-color: #3d566e;
-      transform: scale(1.05);
-    }
+        .button {
+            border-radius: 50%;
+            border: none;
+            background-color: #333;
+            color: white;
+            font-size: 28px;
+            font-weight: 400;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            transition: background-color 0.1s ease;
+        }
 
-    button:active {
-      transform: scale(0.95);
-    }
+        .button:active {
+            background-color: #666;
+        }
 
-    .operator {
-      background-color: #3498db;
-    }
+        .button.operator {
+            background-color: #f1a33c;
+            color: white;
+        }
 
-    .operator:hover {
-      background-color: #2980b9;
-    }
+        .button.operator:active {
+            background-color: #ff9500;
+        }
 
-    .equals {
-      background-color: #e74c3c;
-      grid-column: span 2;
-    }
+        .button.function {
+            background-color: #a5a5a5;
+            color: black;
+        }
 
-    .equals:hover {
-      background-color: #c0392b;
-    }
+        .button.function:active {
+            background-color: #d4d4d4;
+        }
 
-    .clear {
-      background-color: #f39c12;
-    }
+        .button.zero {
+            grid-column: span 2;
+            border-radius: 25% 0 0 25%;
+        }
 
-    .clear:hover {
-      background-color: #d35400;
-    }
-  </style>
+        @media (max-height: 700px) {
+            .display {
+                font-size: 50px;
+                min-height: 100px;
+                padding: 15px 10px;
+            }
+            
+            .button {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .display {
+                font-size: 40px;
+                min-height: 80px;
+                padding: 10px 8px;
+            }
+            
+            .button {
+                font-size: 20px;
+            }
+            
+            .calculator {
+                padding: 15px;
+            }
+        }
+
+        @media (max-height: 500px) {
+            .display {
+                font-size: 32px;
+                min-height: 70px;
+                padding: 8px 6px;
+            }
+            
+            .button {
+                font-size: 18px;
+            }
+            
+            .calculator {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 320px) {
+            .display {
+                font-size: 28px;
+            }
+            
+            .button {
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="calculator">
-    <input type="text" class="display" id="display" readonly>
-    <div class="buttons">
-      <button class="clear" onclick="clearDisplay()">C</button>
-      <button onclick="appendToDisplay('7')">7</button>
-      <button onclick="appendToDisplay('8')">8</button>
-      <button onclick="appendToDisplay('9')">9</button>
-      <button class="operator" onclick="appendToDisplay('/')">/</button>
-      <button onclick="appendToDisplay('4')">4</button>
-      <button onclick="appendToDisplay('5')">5</button>
-      <button onclick="appendToDisplay('6')">6</button>
-      <button class="operator" onclick="appendToDisplay('*')">×</button>
-      <button onclick="appendToDisplay('1')">1</button>
-      <button onclick="appendToDisplay('2')">2</button>
-      <button onclick="appendToDisplay('3')">3</button>
-      <button class="operator" onclick="appendToDisplay('-')">-</button>
-      <button onclick="appendToDisplay('0')">0</button>
-      <button onclick="appendToDisplay('.')">.</button>
-      <button class="equals" onclick="calculate()">=</button>
-      <button class="operator" onclick="appendToDisplay('+')">+</button>
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="button function" onclick="clearAll()">AC</button>
+            <button class="button function" onclick="toggleSign()">+/-</button>
+            <button class="button function" onclick="percentage()">%</button>
+            <button class="button operator" onclick="operate('/')">÷</button>
+            
+            <button class="button" onclick="appendNumber('7')">7</button>
+            <button class="button" onclick="appendNumber('8')">8</button>
+            <button class="button" onclick="appendNumber('9')">9</button>
+            <button class="button operator" onclick="operate('*')">×</button>
+            
+            <button class="button" onclick="appendNumber('4')">4</button>
+            <button class="button" onclick="appendNumber('5')">5</button>
+            <button class="button" onclick="appendNumber('6')">6</button>
+            <button class="button operator" onclick="operate('-')">−</button>
+            
+            <button class="button" onclick="appendNumber('1')">1</button>
+            <button class="button" onclick="appendNumber('2')">2</button>
+            <button class="button" onclick="appendNumber('3')">3</button>
+            <button class="button operator" onclick="operate('+')">+</button>
+            
+            <button class="button zero" onclick="appendNumber('0')">0</button>
+            <button class="button" onclick="appendDecimal()">.</button>
+            <button class="button operator" onclick="calculate()">=</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    const display = document.getElementById('display');
+    <script>
+        let displayValue = '0';
+        let firstOperand = null;
+        let operator = null;
+        let waitingForSecondOperand = false;
+        let resetDisplay = false;
 
-    function appendToDisplay(value) {
-      // 将显示的乘号替换回实际的乘法符号
-      if (value === '×') value = '*';
-      display.value += value;
-    }
+        const display = document.getElementById('display');
 
-    function clearDisplay() {
-      display.value = '';
-    }
-
-    function calculate() {
-        try {
-            // 使用 Function 构造函数安全地计算表达式
-            const result = Function('"use strict"; return (' + display.value + ')')();
-            // 检查结果是否为有限数字
-            if (!isFinite(result)) {
-                throw new Error("Invalid result");
+        function updateDisplay() {
+            // 格式化显示数字
+            let formattedValue = displayValue;
+            
+            // 处理过长的数字
+            if (formattedValue.length > 12) {
+                if (formattedValue.includes('.')) {
+                    const decimalIndex = formattedValue.indexOf('.');
+                    const integerPart = formattedValue.substring(0, decimalIndex);
+                    const decimalPart = formattedValue.substring(decimalIndex + 1);
+                    
+                    if (integerPart.length > 9) {
+                        formattedValue = parseFloat(displayValue).toExponential(6);
+                    } else {
+                        const maxDecimalLength = 12 - integerPart.length - 1;
+                        formattedValue = integerPart + '.' + decimalPart.substring(0, maxDecimalLength);
+                    }
+                } else {
+                    formattedValue = parseFloat(displayValue).toExponential(6);
+                }
             }
-            // 格式化结果，避免过长的小数
-            let formattedResult = result.toString();
-            if (formattedResult.length > 10) {
-                formattedResult = parseFloat(result.toFixed(10)).toString();
-            }
-            display.value = formattedResult;
-        } catch (error) {
-            display.value = '错误';
+            
+            display.textContent = formattedValue;
         }
-    }
 
-    // 添加键盘支持
-    document.addEventListener('keydown', function(event) {
-        const key = event.key;
-        if ('0123456789+-*/.'.includes(key)) {
-            if (key === '*') {
-                appendToDisplay('×');
+        function appendNumber(number) {
+            if (resetDisplay) {
+                displayValue = '0';
+                resetDisplay = false;
+            }
+            
+            if (displayValue === '0' || waitingForSecondOperand) {
+                displayValue = number;
+                waitingForSecondOperand = false;
             } else {
-                appendToDisplay(key);
+                displayValue += number;
             }
-        } else if (key === 'Enter' || key === '=') {
-            calculate();
-        } else if (key === 'Escape' || key === 'c' || key === 'C') {
-            clearDisplay();
-        } else if (key === 'Backspace') {
-            display.value = display.value.slice(0, -1);
+            
+            // 防止输入过长的数字
+            if (displayValue.length > 15) {
+                displayValue = displayValue.substring(0, 15);
+            }
+            
+            updateDisplay();
         }
-    });
-  </script>
+
+        function appendDecimal() {
+            if (resetDisplay) {
+                displayValue = '0';
+                resetDisplay = false;
+            }
+            
+            if (waitingForSecondOperand) {
+                displayValue = '0.';
+                waitingForSecondOperand = false;
+                updateDisplay();
+                return;
+            }
+            
+            if (!displayValue.includes('.')) {
+                displayValue += '.';
+                updateDisplay();
+            }
+        }
+
+        function clearAll() {
+            displayValue = '0';
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            resetDisplay = false;
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            displayValue = (parseFloat(displayValue) * -1).toString();
+            updateDisplay();
+        }
+
+        function percentage() {
+            const value = parseFloat(displayValue);
+            displayValue = (value / 100).toString();
+            updateDisplay();
+        }
+
+        function operate(nextOperator) {
+            const inputValue = parseFloat(displayValue);
+            
+            if (firstOperand === null) {
+                firstOperand = inputValue;
+            } else if (operator) {
+                const result = calculateResult();
+                displayValue = `${result}`;
+                firstOperand = result;
+                updateDisplay();
+            }
+            
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+        }
+
+        function calculateResult() {
+            const secondOperand = parseFloat(displayValue);
+            let result;
+            
+            switch (operator) {
+                case '+':
+                    result = firstOperand + secondOperand;
+                    break;
+                case '-':
+                    result = firstOperand - secondOperand;
+                    break;
+                case '*':
+                    result = firstOperand * secondOperand;
+                    break;
+                case '/':
+                    result = firstOperand / secondOperand;
+                    break;
+                default:
+                    return secondOperand;
+            }
+            
+            // 处理除零错误
+            if (!isFinite(result)) {
+                return 0;
+            }
+            
+            // 限制小数精度
+            return Math.round(result * 1000000000000) / 1000000000000;
+        }
+
+        function calculate() {
+            if (operator === null) return;
+            
+            const result = calculateResult();
+            displayValue = `${result}`;
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            resetDisplay = true;
+            updateDisplay();
+        }
+
+        // 键盘支持
+        document.addEventListener('keydown', (event) => {
+            if (event.key >= '0' && event.key <= '9') {
+                appendNumber(event.key);
+            } else if (event.key === '.') {
+                appendDecimal();
+            } else if (event.key === '+' || event.key === '-') {
+                operate(event.key);
+            } else if (event.key === '*') {
+                operate('*');
+            } else if (event.key === '/') {
+                operate('/');
+            } else if (event.key === 'Enter' || event.key === '=') {
+                calculate();
+            } else if (event.key === 'Escape') {
+                clearAll();
+            } else if (event.key === '%') {
+                percentage();
+            }
+        });
+
+        // 初始化显示
+        updateDisplay();
+    </script>
 </body>
 </html>

@@ -8,5 +8,5 @@
     "author" : "example",
     "min_version" : "1.0.0",
     "permissions" : "common",
-    "main_code" : "main.dart"
+    "main_code" : "main.fxcap"
 }

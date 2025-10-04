@@ -1,0 +1,13 @@
+<xml version="1.0">
+<Column mainAxisAlignment="end">
+    <Center>
+        <Column>
+            <Text
+                data="HelloWorld"
+                font_size="20"
+            />
+            <TextButton><Text data="Click me!"/></TextButton>
+        </Column>
+    </Center>
+</Column>
+</xml>

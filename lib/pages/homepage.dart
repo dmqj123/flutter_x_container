@@ -64,13 +64,13 @@ class _HomePageState extends State<HomePage> {
   Widget _build_apps_list() {
     apps = GetAppList();
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(12.0),
       child: GridView.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4, // 每行4个应用
           childAspectRatio: 1.0, // 宽高比
-          crossAxisSpacing: 5.0, // 水平间距
-          mainAxisSpacing: 5.0, // 垂直间距
+          crossAxisSpacing: 30, // 水平间距
+          mainAxisSpacing: 30, // 垂直间距
         ),
         itemCount: apps.length,
         itemBuilder: (context, index) {
@@ -80,6 +80,7 @@ class _HomePageState extends State<HomePage> {
             onTap: () => {
               setState(() {
                 now_app_bundle_name = app.bundle_name!;
+                _appViewFuture = _getCachedAppViewFuture(now_app_bundle_name);
                 is_home = false;
                 _pageController.animateToPage(1,
                     duration: const Duration(milliseconds: 180),
@@ -137,8 +138,8 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: 80,
+                  height: 80,
                   child: (File(app.icon_path).existsSync())
                       ? Image.file(
                           File(app.icon_path),
@@ -147,7 +148,7 @@ class _HomePageState extends State<HomePage> {
                         )
                       : const Icon(Icons.error),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
                 Text(
                   app.name,
                   style: const TextStyle(fontSize: 12),
@@ -182,32 +183,40 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       //如果是调试模式
                       (!const bool.fromEnvironment("dart.vm.product"))
-                        ? IconButton(onPressed: ()=>{
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => TestPage(),
-                              transitionsBuilder: (context, animation,
-                                  secondaryAnimation, child) {
-                                const begin = Offset(1.0, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
+                          ? IconButton(
+                              onPressed: () => {
+                                    Navigator.push(
+                                        context,
+                                        PageRouteBuilder(
+                                          pageBuilder: (context, animation,
+                                                  secondaryAnimation) =>
+                                              TestPage(),
+                                          transitionsBuilder: (context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child) {
+                                            const begin = Offset(1.0, 0.0);
+                                            const end = Offset.zero;
+                                            const curve = Curves.easeInOut;
 
-                                var tween = Tween(begin: begin, end: end)
-                                    .chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
+                                            var tween = Tween(
+                                                    begin: begin, end: end)
+                                                .chain(
+                                                    CurveTween(curve: curve));
+                                            var offsetAnimation =
+                                                animation.drive(tween);
 
-                                return SlideTransition(
-                                  position: offsetAnimation,
-                                  child: child,
-                                );
-                              },
-                              transitionDuration:
-                                  const Duration(milliseconds: 150),
-                            )
-                          )
-                        }, icon: Icon(Icons.bug_report))
-                        : Container(),
+                                            return SlideTransition(
+                                              position: offsetAnimation,
+                                              child: child,
+                                            );
+                                          },
+                                          transitionDuration:
+                                              const Duration(milliseconds: 150),
+                                        ))
+                                  },
+                              icon: Icon(Icons.bug_report))
+                          : Container(),
                       IconButton(
                         icon: const Icon(Icons.settings),
                         onPressed: () {

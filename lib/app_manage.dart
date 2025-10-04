@@ -6,6 +6,7 @@ import 'dart:ui' show Image;
 import 'package:flutter/material.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_x_container/class.dart';
+import 'package:flutter_x_container/runtime/fxcapp.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -50,7 +51,8 @@ Appbundle GetBundleInfoFromJson(String app_json) {
       appInfo['author'],
       appInfo['min_version'],
       appInfo['permissions'],
-      appInfo['main_code']);
+      appInfo['main_code'],
+      appInfo['app_type']);
 }
 
 Future<AppInstall_Result> InstallApp(String app_path) async {
@@ -158,11 +160,20 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
 
   late Widget app_page;
 
-  switch (code_suffix) {
-    case "dart":
-      //使用dart_eval库编译代码
-      //实验性代码
-      /*
+  if (appbundle.app_type == "fxc") {
+    if(code_suffix == "fxcap"){
+      Map<String, dynamic> appInfo = json.decode(main_codes);
+      String code_path = appInfo['main_code_path'];
+      String page_path = appInfo['main_page_path'];
+      String program = await File(appPath + code_path).readAsStringSync();
+      String page = await File(appPath + page_path).readAsStringSync();
+      app_page = FxcToWidget(page);
+    }
+    /*
+      case "dart":
+        //使用dart_eval库编译代码
+        //实验性代码
+        /*
       final Compiler compiler = Compiler();
       //compiler.addPlugin(flutterEvalPlugin);
       final program = compiler.compile({
@@ -173,82 +184,164 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       }
       });
       print(eval(main_codes,function: 'build',plugins: [flutterEvalPlugin]));*/
-      return OpenAppResult(false,"暂不支持dart语言");
-      break;
-    case "js":
-      //运行js代码  TODO
-      late InAppWebViewController web_controller;
-      String UA = "FlutterXContainer/1.0.0 ";
-      
-      InAppWebView webview_widget = InAppWebView(
-        initialSettings: InAppWebViewSettings(
-          suppressesIncrementalRendering: false,
-          webViewAssetLoader: WebViewAssetLoader()..domain="file:///"+appPath, //BUG
-          disableContextMenu: true,//禁用右键菜单
-          javaScriptEnabled: true,
-          userAgent: UA,
-          useShouldOverrideUrlLoading: true,
-          allowsInlineMediaPlayback: true,
-          isInspectable: false, // 禁用 WebView 检查功能
-        ),
-        initialData: InAppWebViewInitialData(
-          data: main_codes,
-          mimeType: "text/html",
-          encoding: "utf-8",
-        ),
-        onWebViewCreated: (controller) async {
-          web_controller = controller;
-        },
-        onLoadStart: (controller, url) async {
-          // 页面开始加载时会调用
-        },
-        onLoadStop: (controller, url) async {
-          // 页面加载完成时会调用
-        },
-        onReceivedError: (controller, request, error) async {
-          // 页面加载出错时调用
-        },
-      );
-      
-      app_page = webview_widget;
-      break;
-    case "html":
-      //使用webview运行html代码
-      late InAppWebViewController web_controller;
-      String UA = "FlutterXContainer/1.0.0 ";
-      
-      InAppWebView webview_widget = InAppWebView(
-        initialSettings: InAppWebViewSettings(
-          suppressesIncrementalRendering: false,
-          webViewAssetLoader: WebViewAssetLoader()..domain="file:///"+appPath, //BUG
-          disableContextMenu: true,//禁用右键菜单
-          javaScriptEnabled: true,
-          userAgent: UA,
-          useShouldOverrideUrlLoading: true,
-          allowsInlineMediaPlayback: true,
-          isInspectable: false, // 禁用 WebView 检查功能
-        ),
-        initialData: InAppWebViewInitialData(
-          data: main_codes,
-          mimeType: "text/html",
-          encoding: "utf-8",
-        ),
-        onWebViewCreated: (controller) async {
-          web_controller = controller;
-        },
-        onLoadStart: (controller, url) async {
-          // 页面开始加载时会调用
-        },
-        onLoadStop: (controller, url) async {
-          // 页面加载完成时会调用
-        },
-        onReceivedError: (controller, request, error) async {
-          // 页面加载出错时调用
-        },
-      );
-      
-      app_page = webview_widget;
-      break;
+        return OpenAppResult(false, "暂不支持dart语言");
+        break;
+      case "js":
+        //运行js代码  TODO
+        late InAppWebViewController web_controller;
+        String UA = "FlutterXContainer/1.0.0 ";
+
+        InAppWebView webview_widget = InAppWebView(
+          initialSettings: InAppWebViewSettings(
+            suppressesIncrementalRendering: false,
+            webViewAssetLoader: WebViewAssetLoader()
+              ..domain = "file:///" + appPath, //BUG
+            disableContextMenu: true, //禁用右键菜单
+            javaScriptEnabled: true,
+            userAgent: UA,
+            useShouldOverrideUrlLoading: true,
+            allowsInlineMediaPlayback: true,
+            isInspectable: false, // 禁用 WebView 检查功能
+          ),
+          initialData: InAppWebViewInitialData(
+            data: main_codes,
+            mimeType: "text/html",
+            encoding: "utf-8",
+          ),
+          onWebViewCreated: (controller) async {
+            web_controller = controller;
+          },
+          onLoadStart: (controller, url) async {
+            // 页面开始加载时会调用
+          },
+          onLoadStop: (controller, url) async {
+            // 页面加载完成时会调用
+          },
+          onReceivedError: (controller, request, error) async {
+            // 页面加载出错时调用
+          },
+        );
+
+        app_page = webview_widget;
+        break;
+      case "html":
+        //使用webview运行html代码
+        late InAppWebViewController web_controller;
+        String UA = "FlutterXContainer/1.0.0 ";
+
+        InAppWebView webview_widget = InAppWebView(
+          initialSettings: InAppWebViewSettings(
+            suppressesIncrementalRendering: false,
+            webViewAssetLoader: WebViewAssetLoader()
+              ..domain = "file:///" + appPath, //BUG
+            disableContextMenu: true, //禁用右键菜单
+            javaScriptEnabled: true,
+            userAgent: UA,
+            useShouldOverrideUrlLoading: true,
+            allowsInlineMediaPlayback: true,
+            isInspectable: false, // 禁用 WebView 检查功能
+          ),
+          initialData: InAppWebViewInitialData(
+            data: main_codes,
+            mimeType: "text/html",
+            encoding: "utf-8",
+          ),
+          onWebViewCreated: (controller) async {
+            web_controller = controller;
+          },
+          onLoadStart: (controller, url) async {
+            // 页面开始加载时会调用
+          },
+          onLoadStop: (controller, url) async {
+            // 页面加载完成时会调用
+          },
+          onReceivedError: (controller, request, error) async {
+            // 页面加载出错时调用
+          },
+        );
+
+        app_page = webview_widget;
+        break;*/
+  } else if (appbundle.app_type == "web") {
+    switch (code_suffix) {
+      case "js":
+        //运行js代码  TODO
+        late InAppWebViewController web_controller;
+        String UA = "FlutterXContainer/1.0.0 ";
+
+        InAppWebView webview_widget = InAppWebView(
+          initialSettings: InAppWebViewSettings(
+            suppressesIncrementalRendering: false,
+            webViewAssetLoader: WebViewAssetLoader()
+              ..domain = "file:///" + appPath, //BUG
+            disableContextMenu: true, //禁用右键菜单
+            javaScriptEnabled: true,
+            userAgent: UA,
+            useShouldOverrideUrlLoading: true,
+            allowsInlineMediaPlayback: true,
+            isInspectable: false, // 禁用 WebView 检查功能
+          ),
+          initialData: InAppWebViewInitialData(
+            data: main_codes,
+            mimeType: "text/html",
+            encoding: "utf-8",
+          ),
+          onWebViewCreated: (controller) async {
+            web_controller = controller;
+          },
+          onLoadStart: (controller, url) async {
+            // 页面开始加载时会调用
+          },
+          onLoadStop: (controller, url) async {
+            // 页面加载完成时会调用
+          },
+          onReceivedError: (controller, request, error) async {
+            // 页面加载出错时调用
+          },
+        );
+
+        app_page = webview_widget;
+        break;
+      case "html":
+        //使用webview运行html代码
+        late InAppWebViewController web_controller;
+        String UA = "FlutterXContainer/1.0.0 ";
+
+        InAppWebView webview_widget = InAppWebView(
+          initialSettings: InAppWebViewSettings(
+            suppressesIncrementalRendering: false,
+            webViewAssetLoader: WebViewAssetLoader()
+              ..domain = "file:///" + appPath, //BUG
+            disableContextMenu: true, //禁用右键菜单
+            javaScriptEnabled: true,
+            userAgent: UA,
+            useShouldOverrideUrlLoading: true,
+            allowsInlineMediaPlayback: true,
+            isInspectable: false, // 禁用 WebView 检查功能
+          ),
+          initialData: InAppWebViewInitialData(
+            data: main_codes,
+            mimeType: "text/html",
+            encoding: "utf-8",
+          ),
+          onWebViewCreated: (controller) async {
+            web_controller = controller;
+          },
+          onLoadStart: (controller, url) async {
+            // 页面开始加载时会调用
+          },
+          onLoadStop: (controller, url) async {
+            // 页面加载完成时会调用
+          },
+          onReceivedError: (controller, request, error) async {
+            // 页面加载出错时调用
+          },
+        );
+
+        app_page = webview_widget;
+        break;
+    }
   }
+
   return OpenAppResult(true, null, app_page);
 }
