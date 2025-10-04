@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 late final SharedPreferences prefs;
 
+class Settings {
+  static bool dark_mode = false;
+}
+
 Future<String?> runjs(String jscode) async {
   late HeadlessInAppWebView headlessWebView;
   late InAppWebViewController web_controller;

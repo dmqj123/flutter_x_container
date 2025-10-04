@@ -3,6 +3,7 @@ import 'dart:io' show File;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_x_container/enum.dart';
+import 'package:flutter_x_container/system.dart';
 
 import 'settingspage.dart';
 import 'package:flutter_x_container/class.dart';
@@ -76,6 +77,7 @@ class _HomePageState extends State<HomePage> {
         itemBuilder: (context, index) {
           final Applnk app = apps[index];
           return Card(
+            color: (Settings.dark_mode) ? Colors.grey[900] : Colors.white,
               child: InkWell(
             onTap: () => {
               setState(() {
@@ -151,7 +153,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 2),
                 Text(
                   app.name,
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: 12,color: (Settings.dark_mode) ? Colors.white : Colors.black),
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
@@ -313,41 +315,45 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
         ),
-        body: (apps.length == 0)
-            ? const Center(
-                child: Column(children: [Text("暂无应用"), Icon(Icons.widgets)]),
-              )
-            : PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() {
-                    is_home = index == 0;
-                    // 当切换到应用视图时，使用缓存的 Future 或创建新的
-                    if (index == 1 && now_app_bundle_name.isNotEmpty) {
-                      //如果对应包名的PageStorageKey不存在，则创建新的
-                      _appViewFuture =
-                          _getCachedAppViewFuture(now_app_bundle_name);
-                    }
-                  });
-                },
-                children: [
-                  _build_apps_list(),
-                  FutureBuilder<Widget>(
-                    key: PageStorageKey(now_app_bundle_name),
-                    future: _appViewFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done &&
-                          snapshot.hasData) {
-                        return snapshot.data!;
-                      } else if (snapshot.hasError) {
-                        return Center(child: Text('加载错误: ${snapshot.error}'));
-                      } else {
-                        return const Center(child: CircularProgressIndicator());
+        body: Container(
+          decoration: new BoxDecoration(color: (Settings.dark_mode) ? Colors.black : Colors.white),
+          child: (apps.length == 0)
+              ? const Center(
+                  child: Column(children: [Text("暂无应用"), Icon(Icons.widgets)]),
+                )
+              : PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() {
+                      is_home = index == 0;
+                      // 当切换到应用视图时，使用缓存的 Future 或创建新的
+                      if (index == 1 && now_app_bundle_name.isNotEmpty) {
+                        //如果对应包名的PageStorageKey不存在，则创建新的
+                        _appViewFuture =
+                            _getCachedAppViewFuture(now_app_bundle_name);
                       }
-                    },
-                  ),
-                ],
-              ));
+                    });
+                  },
+                  children: [
+                    _build_apps_list(),
+                    FutureBuilder<Widget>(
+                      key: PageStorageKey(now_app_bundle_name),
+                      future: _appViewFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done &&
+                            snapshot.hasData) {
+                          return snapshot.data!;
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('加载错误: ${snapshot.error}'));
+                        } else {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                      },
+                    ),
+                  ],
+                ),
+        ));
   }
 }
