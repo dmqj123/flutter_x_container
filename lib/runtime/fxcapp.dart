@@ -37,22 +37,108 @@ List<Widget> GetChildrenWidgetFromParents(List children) {
 Widget GetWidgetFromName(String cn, List attributes, List children) {
   switch (cn) {
     case "Column":
-      return Column(children: GetChildrenWidgetFromParents(children));
+      MainAxisAlignment? mainAxisAlignment;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "mainAxisAlignment":
+            switch (arg.value) {
+              case "start":
+                mainAxisAlignment = MainAxisAlignment.start;
+                break;
+              case "end":
+                mainAxisAlignment = MainAxisAlignment.end;
+                break;
+              case "center":
+                mainAxisAlignment = MainAxisAlignment.center;
+                break;
+              case "spaceBetween":
+                mainAxisAlignment = MainAxisAlignment.spaceBetween;
+            }
+            break;
+        }
+      }
+      return Column(
+          children: GetChildrenWidgetFromParents(children),
+          mainAxisAlignment: (mainAxisAlignment != null)
+              ? mainAxisAlignment
+              : MainAxisAlignment.start);
+    case "ListView":
+      return ListView(
+          shrinkWrap: true, children: GetChildrenWidgetFromParents(children));
+    case "Row":
+      MainAxisAlignment? mainAxisAlignment;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "mainAxisAlignment":
+            switch (arg.value) {
+              case "start":
+                mainAxisAlignment = MainAxisAlignment.start;
+                break;
+              case "end":
+                mainAxisAlignment = MainAxisAlignment.end;
+                break;
+              case "center":
+                mainAxisAlignment = MainAxisAlignment.center;
+                break;
+              case "spaceBetween":
+                mainAxisAlignment = MainAxisAlignment.spaceBetween;
+            }
+            break;
+        }
+      }
+      return Row(
+          children: GetChildrenWidgetFromParents(children),
+          mainAxisAlignment: (mainAxisAlignment != null)
+              ? mainAxisAlignment
+              : MainAxisAlignment.start);
     case "Center":
       if (GetChildrenWidgetFromParents(children).length <= 0) {
         break;
       }
-      return Center(
-          child: GetChildrenWidgetFromParents(
-              children)[0]);
+      return Center(child: GetChildrenWidgetFromParents(children)[0]);
     case "TextButton":
-        return TextButton(
-          child: GetChildrenWidgetFromParents(
-              children)[0],
-          onPressed: () {},
-        );
+      return TextButton(
+        child: GetChildrenWidgetFromParents(children)[0],
+        onPressed: () {},
+      );
     case "Text":
-      return Text(attributes[0].value);
+      double? font_size;
+      String data = "";
+      if (attributes.length >= 1) {
+        for (XmlAttribute arg in attributes) {
+          switch (arg.name.toString()) {
+            case "data":
+              data = arg.value.toString();
+              break;
+            case "font_size":
+              font_size = double.parse(arg.value);
+              break;
+          }
+        }
+      }
+      return Text(
+        data,
+        style: TextStyle(fontSize: (font_size ?? null)),
+      );
+    case "SizeBox":
+      double? width;
+      double? height;
+      if (attributes.length >= 0) {
+        for (XmlAttribute arg in attributes) {
+          switch (arg.name.toString()) {
+            case "width":
+              width = double.parse(arg.value);
+              break;
+            case "height":
+              height = double.parse(arg.value);
+              break;
+          }
+        }
+      }
+      return SizedBox(
+        width: width,
+        height: height,
+      );
   }
   return Container();
 }

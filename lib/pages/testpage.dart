@@ -14,13 +14,19 @@ class TestPage extends StatelessWidget {
           children: [
             FxcToWidget("""
 <xml version="1.0">
+<Column mainAxisAlignment="end">
+
 <Text
-        data="Flutter Xml Widget"/>
-<Center>
-  <Column>
-    <TextButton><Text data="Click Me"/></TextButton>
-  </Column>
-</Center>
+        data="Flutter Xml Widget"
+        font_size="20"
+        />
+  <Center>
+    <Row mainAxisAlignment="center">
+    <TextButton><Text data="Click Me"/></TextButton><Text data="666"></Text>
+    <SizeBox width="150"/>
+    <TextButton><Text data="Click Me"/></TextButton></Row>
+  </Center>
+</Column>
 </xml>
 """)
           ],
