@@ -7,6 +7,7 @@ import 'package:flutter_x_container/enum.dart';
 import 'settingspage.dart';
 import 'package:flutter_x_container/class.dart';
 import 'package:flutter_x_container/app_manage.dart';
+import 'testpage.dart';
 
 bool is_home = true;
 
@@ -21,7 +22,7 @@ class _HomePageState extends State<HomePage> {
   late PageController _pageController;
   String now_app_bundle_name = "";
   late Future<Widget> _appViewFuture;
-  
+
   // 添加一个 Map 来缓存每个应用的 Future
   final Map<String, Future<Widget>> _appViewFutureCache = {};
 
@@ -33,10 +34,11 @@ class _HomePageState extends State<HomePage> {
     _appViewFuture =
         Future.value(const Center(child: CircularProgressIndicator()));
   }
-  
+
   // 新增方法：获取或创建应用视图的 Future
   Future<Widget> _getCachedAppViewFuture(String bundleName) {
-    if (!_appViewFutureCache.containsKey(bundleName) || bundleName != now_app_bundle_name) {
+    if (!_appViewFutureCache.containsKey(bundleName) ||
+        bundleName != now_app_bundle_name) {
       _appViewFutureCache[bundleName] = _app_view();
     }
     return _appViewFutureCache[bundleName]!;
@@ -176,34 +178,50 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           actions: [
             (is_home)
-                ? IconButton(
-                    icon: const Icon(Icons.settings),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const SettingsPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(1.0, 0.0);
-                            const end = Offset.zero;
-                            const curve = Curves.easeInOut;
+                ? Row(
+                    children: [
+                      //如果是调试模式
+                      (!const bool.fromEnvironment("dart.vm.product"))
+                        ? IconButton(onPressed: ()=>{
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => TestPage(),
+                            )
+                          )
+                        }, icon: Icon(Icons.bug_report))
+                        : Container(),
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const SettingsPage(),
+                              transitionsBuilder: (context, animation,
+                                  secondaryAnimation, child) {
+                                const begin = Offset(1.0, 0.0);
+                                const end = Offset.zero;
+                                const curve = Curves.easeInOut;
 
-                            var tween = Tween(begin: begin, end: end)
-                                .chain(CurveTween(curve: curve));
-                            var offsetAnimation = animation.drive(tween);
+                                var tween = Tween(begin: begin, end: end)
+                                    .chain(CurveTween(curve: curve));
+                                var offsetAnimation = animation.drive(tween);
 
-                            return SlideTransition(
-                              position: offsetAnimation,
-                              child: child,
-                            );
-                          },
-                          transitionDuration: const Duration(milliseconds: 300),
-                        ),
-                      );
-                    },
+                                return SlideTransition(
+                                  position: offsetAnimation,
+                                  child: child,
+                                );
+                              },
+                              transitionDuration:
+                                  const Duration(milliseconds: 300),
+                            ),
+                          );
+                        },
+                      )
+                    ],
                   )
                 : const SizedBox(width: 48)
           ],
@@ -282,7 +300,8 @@ class _HomePageState extends State<HomePage> {
                     // 当切换到应用视图时，使用缓存的 Future 或创建新的
                     if (index == 1 && now_app_bundle_name.isNotEmpty) {
                       //如果对应包名的PageStorageKey不存在，则创建新的
-                      _appViewFuture = _getCachedAppViewFuture(now_app_bundle_name);
+                      _appViewFuture =
+                          _getCachedAppViewFuture(now_app_bundle_name);
                     }
                   });
                 },
