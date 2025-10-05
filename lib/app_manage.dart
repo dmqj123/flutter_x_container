@@ -15,6 +15,8 @@ import 'package:flutter_x_container/system.dart';
 
 List<Applnk> apps_list = [];
 
+List<Map<String, dynamic>> apps_view_list = [];
+
 void SaveAppList() async {
   //将apps_list保存到preferences中
   List<Map<String, dynamic>> encodableList =
@@ -362,11 +364,10 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
                 }
                 List<String> commandsw = argsString.split(', ');
                 String command = "";
-                for(String i in commandsw){
-                  if(command!=""){
-                    command = command+" "+i;
-                  }
-                  else{
+                for (String i in commandsw) {
+                  if (command != "") {
+                    command = command + " " + i;
+                  } else {
                     command = i;
                   }
                 }
@@ -390,6 +391,50 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
         break;
     }
   }
+  //如果app_view_list中不包含bn为app_bundle_name的app，则添加
+  if (apps_view_list.isEmpty ||
+      apps_view_list
+          .where((element) => element["bn"] == app_bundle_name)
+          .isEmpty) {
+    apps_view_list.add({"id": UniqueKey(), "bn": app_bundle_name});
+  }
+  // 安全地访问first元素，避免Bad state: No element异常
+  var appView =
+      apps_view_list.where((element) => element["bn"] == app_bundle_name);
+  /*return OpenAppResult(true, null, Container(
+    key: appView.isNotEmpty ? appView.first["id"] : UniqueKey(),
+    child: app_page,));*/
+  return OpenAppResult(
+      true,
+      null,
+      Appview(
+        key: appView.isNotEmpty ? appView.first["id"] : UniqueKey(),
+        cchild: app_page,
+      ));
+}
 
-  return OpenAppResult(true, null, app_page);
+class Appview extends StatefulWidget {
+  // 必须接收“唯一ID”当key
+  final Widget cchild;
+  const Appview({super.key, required this.cchild});
+
+  @override
+  State<Appview> createState() => _AppviewState();
+}
+
+class _AppviewState extends State<Appview> with AutomaticKeepAliveClientMixin {
+  // 1. 开启缓存
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // 2. 必须加这句，缓存才生效
+    return widget.cchild;
+  }
 }
