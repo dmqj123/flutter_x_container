@@ -9,8 +9,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool wifiEnabled = true;
-  bool bluetoothEnabled = false;
-  bool darkModeEnabled = false;
   double brightness = 0.7;
   String language = '简体中文';
   String region = '中国大陆';
@@ -40,18 +38,6 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (bool value) {
               setState(() {
                 wifiEnabled = value;
-              });
-            },
-          ),
-          const Divider(),
-          _buildSectionHeader('显示'),
-          _buildSwitchListTile(
-            icon: Icons.dark_mode,
-            title: '深色模式',
-            value: darkModeEnabled,
-            onChanged: (bool value) {
-              setState(() {
-                darkModeEnabled = value;
               });
             },
           ),
