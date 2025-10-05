@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_x_container/runtime/fxcapp.dart';
+import 'package:flutter_x_container/system.dart';
 
 class TestPage extends StatelessWidget {
   @override
@@ -12,7 +13,21 @@ class TestPage extends StatelessWidget {
         ),
         body: Column(
           children: [
-            FxcToWidget("""
+            FutureBuilder(
+              future: runjs("""function main(){console.log("Hello, World!");}"""), 
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else if (snapshot.hasData) {
+                  return Text('Result: ${snapshot.data}');
+                } else {
+                  return Text('No data');
+                }
+              }
+            )
+            /*FxcToWidget("""
 <xml version="1.0">
 <Column mainAxisAlignment="end">
 
@@ -28,7 +43,7 @@ class TestPage extends StatelessWidget {
   </Center>
 </Column>
 </xml>
-""")
+""")*/
           ],
         ));
   }

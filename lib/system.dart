@@ -1,3 +1,5 @@
+import 'dart:async' show Completer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_x_container/class.dart' show ApiCallResult;
@@ -5,20 +7,87 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 late final SharedPreferences prefs;
 
-Future<String?> runjs(String jscode) async {
-  late HeadlessInAppWebView headlessWebView;
-  late InAppWebViewController web_controller;
-  var result;
+// 创建一个持久的HeadlessInAppWebView实例
+HeadlessInAppWebView? _headlessWebView;
+InAppWebViewController? _webController;
+bool _isWebViewReady = false;
 
-  headlessWebView = HeadlessInAppWebView(
+// 初始化WebView环境
+Future<void> initJsEnvironment() async {
+  if (_headlessWebView != null && _isWebViewReady) return;
+
+  final Completer<void> completer = Completer<void>();
+
+  _headlessWebView = HeadlessInAppWebView(
+    initialData: InAppWebViewInitialData(
+      data: '''
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="utf-8">
+          <title>JS Runner</title>
+      </head>
+      <body>
+      </body>
+      </html>
+      ''',
+      mimeType: "text/html",
+      encoding: "utf-8",
+    ),
+    initialSettings: InAppWebViewSettings(
+      javaScriptEnabled: true,
+      useShouldOverrideUrlLoading: true,
+      isInspectable: false,
+    ),
     onWebViewCreated: (controller) async {
-      web_controller = controller;
-      // WebView 创建完成后执行 JavaScript
-      result = await web_controller.evaluateJavascript(source: jscode);
+      _webController = controller;
+    },
+    onLoadStop: (controller, url) async {
+      _isWebViewReady = true;
+      completer.complete();
+    },
+    onReceivedError: (controller, request, error) async {
+      _isWebViewReady = false;
+      completer.completeError(error);
     },
   );
-  await headlessWebView.run();
-  return result.toString();
+
+  try {
+    await _headlessWebView!.run();
+    await completer.future;
+  } catch (e) {
+    _isWebViewReady = false;
+    rethrow;
+  }
+}
+
+// 执行JavaScript代码并自动调用main函数
+Future<String?> runjs(String jscode) async {
+  if (!_isWebViewReady || _webController == null) {
+    await initJsEnvironment();
+  }
+
+  try {
+    // 先执行传入的JavaScript代码（可能包含函数定义）
+    await _webController!.evaluateJavascript(source: jscode);
+    
+    // 然后尝试调用main函数并获取结果
+    final result = await _webController!.evaluateJavascript(
+        source: 'typeof main === "function" ? main() : undefined');
+    return result?.toString();
+  } catch (e) {
+    return null;
+  }
+}
+
+// 销毁JavaScript环境
+Future<void> disposeJsEnvironment() async {
+  _isWebViewReady = false;
+  _webController = null;
+  if (_headlessWebView != null) {
+    await _headlessWebView!.dispose();
+    _headlessWebView = null;
+  }
 }
 
 ApiCallResult? api_call(String api) {
