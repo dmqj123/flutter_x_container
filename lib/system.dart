@@ -41,6 +41,20 @@ Future<void> initJsEnvironment() async {
     ),
     onWebViewCreated: (controller) async {
       _webController = controller;
+      controller.addJavaScriptHandler(
+        //TEST
+        handlerName: 'consoleLog',
+        callback: (args) {
+          print(args.toString().split(', ')[1]);
+        },
+      );
+      controller.addJavaScriptHandler(
+        handlerName: 'fxc_api_call',
+        callback: (args) {
+          List<String> command = args.toString().split(', ');
+          //TODO 处理fxc命令
+        },
+      );
     },
     onLoadStop: (controller, url) async {
       _isWebViewReady = true;

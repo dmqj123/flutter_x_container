@@ -14,7 +14,9 @@ class TestPage extends StatelessWidget {
         body: Column(
           children: [
             FutureBuilder(
-              future: runjs("""function main(){console.log("Hello, World!");}"""), 
+              future: runjs("""function main(){
+              const args = [1,5+2,3];
+              window.flutter_inappwebview.callHandler('consoleLog', ...args);return 0}"""), 
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return CircularProgressIndicator();
