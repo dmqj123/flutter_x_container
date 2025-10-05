@@ -113,6 +113,8 @@ ApiCallResult? api_call(String api) {
   List<String> cargs = api_list.sublist(1);
   //根据命令执行相应的操作
   switch (command) {
+    case "test":
+      print("test_call:"+cargs[0]);
     case "api_call":
       List<String> api_path = cargs[0].split("/");
       switch (api_path[0]) {

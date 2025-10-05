@@ -161,7 +161,7 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
   late Widget app_page;
 
   if (appbundle.app_type == "fxc") {
-    if(code_suffix == "fxcap"){
+    if (code_suffix == "fxcap") {
       Map<String, dynamic> appInfo = json.decode(main_codes);
       String code_path = appInfo['main_code_path'];
       String page_path = appInfo['main_page_path'];
@@ -288,6 +288,20 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
           ),
           onWebViewCreated: (controller) async {
             web_controller = controller;
+            controller.addJavaScriptHandler(
+              //TEST
+              handlerName: 'consoleLog',
+              callback: (args) {
+                print(args);
+              },
+            );
+            controller.addJavaScriptHandler(
+              handlerName: 'fxc_api_call',
+              callback: (args) {
+                List<String> command = args.toString().split(', ');
+                //TODO 处理fxc命令
+              },
+            );
           },
           onLoadStart: (controller, url) async {
             // 页面开始加载时会调用
@@ -326,6 +340,40 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
           ),
           onWebViewCreated: (controller) async {
             web_controller = controller;
+            controller.addJavaScriptHandler(
+              //TEST
+              handlerName: 'consoleLog',
+              callback: (args) {
+                print(args);
+              },
+            );
+            controller.addJavaScriptHandler(
+              handlerName: 'fxc_api_call',
+              callback: (args) {
+                //此时args.toString()=="[[test, hello]]"
+                String argsString = args.toString();
+                // 去除首尾的方括号
+                if (argsString.startsWith('[') && argsString.endsWith(']')) {
+                  argsString = argsString.substring(1, argsString.length - 1);
+                }
+                // 再次检查并去除可能的内层方括号
+                if (argsString.startsWith('[') && argsString.endsWith(']')) {
+                  argsString = argsString.substring(1, argsString.length - 1);
+                }
+                List<String> commandsw = argsString.split(', ');
+                String command = "";
+                for(String i in commandsw){
+                  if(command!=""){
+                    command = command+" "+i;
+                  }
+                  else{
+                    command = i;
+                  }
+                }
+                api_call(command);
+                //TODO 处理fxc命令
+              },
+            );
           },
           onLoadStart: (controller, url) async {
             // 页面开始加载时会调用
