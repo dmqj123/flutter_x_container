@@ -76,7 +76,8 @@ Future<void> initJsEnvironment() async {
 }
 
 // 执行JavaScript代码并自动调用main函数
-Future<String?> runjs(String jscode) async {
+Future<String?> runjs(String jscode,String? function_name) async {
+  String fn = function_name ?? "main";
   if (!_isWebViewReady || _webController == null) {
     await initJsEnvironment();
   }
@@ -87,7 +88,7 @@ Future<String?> runjs(String jscode) async {
     
     // 然后尝试调用main函数并获取结果
     final result = await _webController!.evaluateJavascript(
-        source: 'typeof main === "function" ? main() : undefined');
+        source: 'typeof $fn === "function" ? $fn() : undefined');
     return result?.toString();
   } catch (e) {
     return null;
