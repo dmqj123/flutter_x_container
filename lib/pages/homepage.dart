@@ -259,7 +259,7 @@ class _HomePageState extends State<HomePage> {
                     FilePickerResult? picker_result = await FilePicker.platform
                         .pickFiles(
                             type: FileType.custom,
-                            allowedExtensions: ['zip', 'fcx'],
+                            allowedExtensions: ['zip', 'fxc'],
                             allowMultiple: false);
                     if (picker_result == null || picker_result.paths.isEmpty) {
                       return;
