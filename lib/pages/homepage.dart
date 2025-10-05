@@ -18,21 +18,57 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  late PageController _pageController;
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  int _currentIndex = 0; // 使用索引来控制当前显示的页面
   String now_app_bundle_name = "";
   late Future<Widget> _appViewFuture;
 
+  // 添加动画控制器
+  late AnimationController _animationController;
+  late Animation<double> _opacityAnimation;
+  late Animation<double> _scaleAnimation;
+
   // 添加一个 Map 来缓存每个应用的 Future
   final Map<String, Future<Widget>> _appViewFutureCache = {};
+  
+  // 用于存储已经打开过的应用程序widget
+  final Map<String, Widget> _appWidgets = {};
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: is_home ? 0 : 1);
     // 初始化一个默认的 Future，避免空值
     _appViewFuture =
         Future.value(const Center(child: CircularProgressIndicator()));
+    
+    // 初始化动画控制器
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    
+    _setupAnimations();
+    
+    // 启动初始动画
+    _animationController.forward();
+  }
+
+  void _setupAnimations() {
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
   }
 
   // 新增方法：获取或创建应用视图的 Future
@@ -82,9 +118,11 @@ class _HomePageState extends State<HomePage> {
                 now_app_bundle_name = app.bundle_name!;
                 _appViewFuture = _getCachedAppViewFuture(now_app_bundle_name);
                 is_home = false;
-                _pageController.animateToPage(1,
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeInOut);
+                _currentIndex = 1; // 切换到应用视图
+                // 重新启动动画
+                _animationController.reset();
+                _setupAnimations();
+                _animationController.forward();
               })
             },
             onLongPress: () => {
@@ -166,7 +204,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -306,46 +344,52 @@ class _HomePageState extends State<HomePage> {
                   onPressed: () {
                     setState(() {
                       is_home = true;
-                      _pageController.animateToPage(0,
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeInOut);
+                      _currentIndex = 0; // 切换到主页视图
+                      // 重新启动动画
+                      _animationController.reset();
+                      _setupAnimations();
+                      _animationController.forward();
                     });
                   },
                 ),
         ),
         body: (apps.length == 0)
             ? const Center(
-                child: Column(children: [Text("暂无应用"), Icon(Icons.widgets)]),
+                child: Column(children: [Text("暂无应用"), Icon(Icons.widgets)],mainAxisAlignment: MainAxisAlignment.center,),
               )
-            : PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() {
-                    is_home = index == 0;
-                    // 当切换到应用视图时，使用缓存的 Future 或创建新的
-                    if (index == 1 && now_app_bundle_name.isNotEmpty) {
-                      //如果对应包名的PageStorageKey不存在，则创建新的
-                      _appViewFuture =
-                          _getCachedAppViewFuture(now_app_bundle_name);
-                    }
-                  });
-                },
+            : IndexedStack(
+                index: _currentIndex,
                 children: [
-                  _build_apps_list(),
-                  FutureBuilder<Widget>(
-                    key: PageStorageKey(now_app_bundle_name),
-                    future: _appViewFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done &&
-                          snapshot.hasData) {
-                        return snapshot.data!;
-                      } else if (snapshot.hasError) {
-                        return Center(child: Text('加载错误: ${snapshot.error}'));
-                      } else {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                    },
+                  FadeTransition(
+                    opacity: _opacityAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: _build_apps_list(),
+                    ),
+                  ),
+                  FadeTransition(
+                    opacity: _opacityAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: FutureBuilder<Widget>(
+                        key: ValueKey(now_app_bundle_name),
+                        future: _appViewFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.done &&
+                              snapshot.hasData) {
+                            // 缓存创建好的widget以便重复使用
+                            _appWidgets[now_app_bundle_name] = snapshot.data!;
+                            return snapshot.data!;
+                          } else if (snapshot.hasError) {
+                            return Center(child: Text('加载错误: ${snapshot.error}'));
+                          } else {
+                            // 显示已缓存的widget（如果有的话）
+                            return _appWidgets[now_app_bundle_name] ?? 
+                                const Center(child: CircularProgressIndicator());
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ));
