@@ -72,7 +72,7 @@ Future<void> initJsEnvironment(
 
 // 执行JavaScript代码并自动调用main函数
 Future<String?> runjs(String jscode, String? function_name,
-    {WebViewCreatedCallback? onWebViewCreated}) async {
+    {WebViewCreatedCallback? onWebViewCreated, String? pargs}) async {
   String fn = function_name ?? "main";
   if (!_isWebViewReady || _webController == null) {
     await initJsEnvironment(
@@ -94,8 +94,14 @@ Future<String?> runjs(String jscode, String? function_name,
     await _webController!.evaluateJavascript(source: jscode);
 
     // 然后尝试调用main函数并获取结果
-    final result = await _webController!.evaluateJavascript(
-        source: 'typeof $fn === "function" ? $fn() : undefined');
+    late final result;
+    if (pargs != null) {
+      result = await _webController!.evaluateJavascript(
+          source: 'typeof $fn === "function" ? $fn($pargs) : undefined');
+    } else {
+      result = await _webController!.evaluateJavascript(
+          source: 'typeof $fn === "function" ? $fn() : undefined');
+    }
     return result?.toString();
   } catch (e) {
     return null;
@@ -148,13 +154,13 @@ List<String> _parseCommand(String command) {
   final List<String> result = [];
   final RegExp regExp = RegExp(r'"([^"]*)"|(\S+)');
   final Iterable<RegExpMatch> matches = regExp.allMatches(command);
-  
+
   for (final match in matches) {
     String? arg = match.group(1) ?? match.group(2);
     if (arg != null) {
       result.add(arg);
     }
   }
-  
+
   return result;
 }
