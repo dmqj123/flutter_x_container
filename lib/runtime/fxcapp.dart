@@ -34,6 +34,10 @@ List<Widget> GetChildrenWidgetFromParents(List children) {
   return widgets;
 }
 
+String? runCode(){
+  
+}
+
 Widget GetWidgetFromName(String cn, List attributes, List children) {
   switch (cn) {
     case "Column":
@@ -97,9 +101,26 @@ Widget GetWidgetFromName(String cn, List attributes, List children) {
       }
       return Center(child: GetChildrenWidgetFromParents(children)[0]);
     case "TextButton":
+      void Function()? onPressed;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "onclick":
+            //格式#fxcf:function_name()
+            //检测是否以#fxcf:开头且以()结尾
+            if (arg.value.startsWith("#fxcf:") && arg.value.endsWith("()")) {
+              //获取函数名称
+              String function_name = arg.value.substring(6, arg.value.length - 2);
+              onPressed = () {
+                //调用函数
+
+              };
+            }
+            break;
+        }
+      }
       return TextButton(
         child: GetChildrenWidgetFromParents(children)[0],
-        onPressed: () {},
+        onPressed: onPressed,
       );
     case "Text":
       double? font_size;

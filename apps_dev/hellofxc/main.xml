@@ -3,10 +3,11 @@
     <Center>
         <Column>
             <Text
+                id="text01"
                 data="HelloWorld"
                 font_size="20"
             />
-            <TextButton><Text data="Click me!"/></TextButton>
+            <TextButton onclick="#fxcf:hellotext()"><Text data="Click me!"/></TextButton>
         </Column>
     </Center>
 </Column>

@@ -168,6 +168,51 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       String page_path = appInfo['main_page_path'];
       String program = await File(appPath + code_path).readAsStringSync();
       String page = await File(appPath + page_path).readAsStringSync();
+
+      if (code_path.endsWith(".dart")) {
+        //运行dart代码
+      } else if (code_path.endsWith(".js")) {
+        //运行js代码
+        runjs(
+          program,
+          "main",
+          onWebViewCreated: (controller) {
+            controller.addJavaScriptHandler(
+              //TEST
+              handlerName: 'consoleLog',
+              callback: (args) {
+                print(args.toString().split(', ')[1]);
+              },
+            );
+            controller.addJavaScriptHandler(
+              handlerName: 'fxc_api_call',
+              callback: (args) {
+                String argsString = args.toString();
+                // 去除首尾的方括号
+                if (argsString.startsWith('[') && argsString.endsWith(']')) {
+                  argsString = argsString.substring(1, argsString.length - 1);
+                }
+                // 再次检查并去除可能的内层方括号
+                if (argsString.startsWith('[') && argsString.endsWith(']')) {
+                  argsString = argsString.substring(1, argsString.length - 1);
+                }
+                List<String> commandsw = argsString.split(', ');
+                String command = "";
+                for (String i in commandsw) {
+                  if (command != "") {
+                    command = command + " " + i;
+                  } else {
+                    command = i;
+                  }
+                }
+                //TODO 处理fxc命令
+                api_call(command);
+              },
+            );
+          },
+        );
+      }
+
       app_page = FxcToWidget(page);
     }
     /*
@@ -395,7 +440,8 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       apps_view_key_list
           .where((element) => element["bn"] == app_bundle_name)
           .isEmpty) {
-    apps_view_key_list.add({"id": ValueKey(app_bundle_name), "bn": app_bundle_name});
+    apps_view_key_list
+        .add({"id": ValueKey(app_bundle_name), "bn": app_bundle_name});
   }
   // 安全地访问first元素，避免Bad state: No element异常
   var appView =
@@ -407,7 +453,9 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       true,
       null,
       Appview(
-        key: appView.isNotEmpty ? appView.first["id"] : ValueKey(app_bundle_name),
+        key: appView.isNotEmpty
+            ? appView.first["id"]
+            : ValueKey(app_bundle_name),
         cchild: app_page,
       ));
 }

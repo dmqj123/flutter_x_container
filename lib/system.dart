@@ -12,8 +12,13 @@ HeadlessInAppWebView? _headlessWebView;
 InAppWebViewController? _webController;
 bool _isWebViewReady = false;
 
+// 定义onWebViewCreated回调函数类型
+typedef WebViewCreatedCallback = void Function(
+    InAppWebViewController controller);
+
 // 初始化WebView环境
-Future<void> initJsEnvironment() async {
+Future<void> initJsEnvironment(
+    {WebViewCreatedCallback? onWebViewCreated}) async {
   if (_headlessWebView != null && _isWebViewReady) return;
 
   final Completer<void> completer = Completer<void>();
@@ -41,20 +46,10 @@ Future<void> initJsEnvironment() async {
     ),
     onWebViewCreated: (controller) async {
       _webController = controller;
-      controller.addJavaScriptHandler(
-        //TEST
-        handlerName: 'consoleLog',
-        callback: (args) {
-          print(args.toString().split(', ')[1]);
-        },
-      );
-      controller.addJavaScriptHandler(
-        handlerName: 'fxc_api_call',
-        callback: (args) {
-          List<String> command = args.toString().split(', ');
-          //TODO 处理fxc命令
-        },
-      );
+      // 调用传入的回调函数
+      if (onWebViewCreated != null) {
+        onWebViewCreated(controller);
+      }
     },
     onLoadStop: (controller, url) async {
       _isWebViewReady = true;
@@ -76,16 +71,28 @@ Future<void> initJsEnvironment() async {
 }
 
 // 执行JavaScript代码并自动调用main函数
-Future<String?> runjs(String jscode,String? function_name) async {
+Future<String?> runjs(String jscode, String? function_name,
+    {WebViewCreatedCallback? onWebViewCreated}) async {
   String fn = function_name ?? "main";
   if (!_isWebViewReady || _webController == null) {
-    await initJsEnvironment();
+    await initJsEnvironment(
+      onWebViewCreated: onWebViewCreated ??
+          (controller) {
+            controller.addJavaScriptHandler(
+              //TEST
+              handlerName: 'consoleLog',
+              callback: (args) {
+                print(args.toString().split(', ')[1]);
+              },
+            );
+          },
+    );
   }
 
   try {
     // 先执行传入的JavaScript代码（可能包含函数定义）
     await _webController!.evaluateJavascript(source: jscode);
-    
+
     // 然后尝试调用main函数并获取结果
     final result = await _webController!.evaluateJavascript(
         source: 'typeof $fn === "function" ? $fn() : undefined');
@@ -106,8 +113,9 @@ Future<void> disposeJsEnvironment() async {
 }
 
 ApiCallResult? api_call(String api) {
+  //TODO 完善ApiCall
   //先将由空格分开的api命令通过空格拆分成列表（如果空格由双引号包裹则计入一项）
-  List<String> api_list = api.split(RegExp(r'[ ]+'));
+  List<String> api_list = _parseCommand(api);
   //将列表中的第一个元素作为命令
   String command = api_list[0];
   //将列表中的剩余元素作为参数
@@ -115,7 +123,7 @@ ApiCallResult? api_call(String api) {
   //根据命令执行相应的操作
   switch (command) {
     case "test":
-      print("test_call:"+cargs[0]);
+      print("test_call:" + cargs[0]);
     case "api_call":
       List<String> api_path = cargs[0].split("/");
       switch (api_path[0]) {
@@ -133,4 +141,20 @@ ApiCallResult? api_call(String api) {
   }
 
   return ApiCallResult(false);
+}
+
+/// 解析命令行字符串，正确处理引号包裹的参数
+List<String> _parseCommand(String command) {
+  final List<String> result = [];
+  final RegExp regExp = RegExp(r'"([^"]*)"|(\S+)');
+  final Iterable<RegExpMatch> matches = regExp.allMatches(command);
+  
+  for (final match in matches) {
+    String? arg = match.group(1) ?? match.group(2);
+    if (arg != null) {
+      result.add(arg);
+    }
+  }
+  
+  return result;
 }

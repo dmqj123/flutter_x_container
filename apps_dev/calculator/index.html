@@ -199,6 +199,7 @@
         const display = document.getElementById('display');
 
         function updateDisplay() {
+            window.flutter_inappwebview.callHandler('fxc_api_call',['test','Hello World!']);
             // 格式化显示数字
             let formattedValue = displayValue;
             
