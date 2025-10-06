@@ -18,37 +18,33 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0; // 使用索引来控制当前显示的页面
   String now_app_bundle_name = "";
-  late Future<Widget> _appViewFuture;
 
   // 添加动画控制器
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation;
   late Animation<double> _scaleAnimation;
 
-  // 添加一个 Map 来缓存每个应用的 Future
-  final Map<String, Future<Widget>> _appViewFutureCache = {};
-  
-  // 用于存储已经打开过的应用程序widget
-  final Map<String, Widget> _appWidgets = {};
+  // 存储已打开应用的IndexedStack索引
+  final Map<String, int> _appIndices = {};
+  List<Widget> _appViews = [];
+  int _currentAppIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    // 初始化一个默认的 Future，避免空值
-    _appViewFuture =
-        Future.value(const Center(child: CircularProgressIndicator()));
-    
+
     // 初始化动画控制器
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     _setupAnimations();
-    
+
     // 启动初始动画
     _animationController.forward();
   }
@@ -61,7 +57,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
@@ -71,28 +67,23 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     ));
   }
 
-  // 新增方法：获取或创建应用视图的 Future
-  Future<Widget> _getCachedAppViewFuture(String bundleName) {
-    if (!_appViewFutureCache.containsKey(bundleName) ||
-        bundleName != now_app_bundle_name) {
-      _appViewFutureCache[bundleName] = _app_view();
+  void _addAppView(String bundleName, Widget view) {
+    if (!_appIndices.containsKey(bundleName)) {
+      // 如果应用未被添加到视图中，则添加它
+      setState(() {
+        _appViews = List.from(_appViews)..add(view);
+        _appIndices[bundleName] = _appViews.length - 1;
+      });
     }
-    return _appViewFutureCache[bundleName]!;
   }
 
-  Future<Widget> _app_view() async {
-    OpenAppResult result = await OpenApp(now_app_bundle_name);
-
-    if (!result.success) {
-      return Center(
-        child: Text("错误：" + (result.message ?? "")),
-      );
+  void _switchToApp(String bundleName) {
+    if (_appIndices.containsKey(bundleName)) {
+      setState(() {
+        _currentAppIndex = _appIndices[bundleName]!;
+        now_app_bundle_name = bundleName;
+      });
     }
-
-    //TODO 实现应用视图
-    return Center(
-      child: result.page ?? const Text("加载中..."),
-    );
   }
 
   late List<Applnk> apps;
@@ -113,17 +104,32 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           final Applnk app = apps[index];
           return Card(
               child: InkWell(
-            onTap: () => {
+            onTap: () async {
+              // 先检查是否已经有这个应用的视图
+              if (!_appIndices.containsKey(app.bundle_name!)) {
+                // 如果没有，则创建应用视图并添加到_appViews中
+                OpenAppResult result = await OpenApp(app.bundle_name!);
+                
+                if (result.success) {
+                  _addAppView(app.bundle_name!, result.page ?? const Text("加载中..."));
+                } else {
+                  _addAppView(app.bundle_name!, Center(
+                    child: Text("错误：" + (result.message ?? "")),
+                  ));
+                }
+              }
+              
+              // 切换到目标应用
+              _switchToApp(app.bundle_name!);
+              
               setState(() {
-                now_app_bundle_name = app.bundle_name!;
-                _appViewFuture = _getCachedAppViewFuture(now_app_bundle_name);
                 is_home = false;
                 _currentIndex = 1; // 切换到应用视图
                 // 重新启动动画
                 _animationController.reset();
                 _setupAnimations();
                 _animationController.forward();
-              })
+              });
             },
             onLongPress: () => {
               showModalBottomSheet(
@@ -213,7 +219,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     apps = GetAppList();
     return Scaffold(
         appBar: AppBar(
-          title: (is_home) ? null : const Text("App"),
+          title: (is_home) ? const Text("Apps") : const Text("App"),
           backgroundColor: Theme.of(context).colorScheme.primary,
           actions: [
             (is_home)
@@ -355,7 +361,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
         body: (apps.length == 0)
             ? const Center(
-                child: Column(children: [Text("暂无应用"), Icon(Icons.widgets)],mainAxisAlignment: MainAxisAlignment.center,),
+                child: Column(
+                  children: [Text("暂无应用"), Icon(Icons.widgets)],
+                  mainAxisAlignment: MainAxisAlignment.center,
+                ),
               )
             : IndexedStack(
                 index: _currentIndex,
@@ -371,23 +380,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     opacity: _opacityAnimation,
                     child: ScaleTransition(
                       scale: _scaleAnimation,
-                      child: FutureBuilder<Widget>(
-                        key: ValueKey(now_app_bundle_name),
-                        future: _appViewFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.done &&
-                              snapshot.hasData) {
-                            // 缓存创建好的widget以便重复使用
-                            _appWidgets[now_app_bundle_name] = snapshot.data!;
-                            return snapshot.data!;
-                          } else if (snapshot.hasError) {
-                            return Center(child: Text('加载错误: ${snapshot.error}'));
-                          } else {
-                            // 显示已缓存的widget（如果有的话）
-                            return _appWidgets[now_app_bundle_name] ?? 
-                                const Center(child: CircularProgressIndicator());
-                          }
-                        },
+                      child: IndexedStack(
+                        index: _currentAppIndex,
+                        children: _appViews,
                       ),
                     ),
                   ),

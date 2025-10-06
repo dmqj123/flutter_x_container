@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:ui' show Image;
 //import 'package:dart_eval/dart_eval.dart';
 //import 'package:dart_eval/dart_eval_bridge.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +14,7 @@ import 'package:flutter_x_container/system.dart';
 
 List<Applnk> apps_list = [];
 
-List<Map<String, dynamic>> apps_view_list = [];
+List<Map<String, dynamic>> apps_view_key_list = [];
 
 void SaveAppList() async {
   //将apps_list保存到preferences中
@@ -392,15 +391,15 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
     }
   }
   //如果app_view_list中不包含bn为app_bundle_name的app，则添加
-  if (apps_view_list.isEmpty ||
-      apps_view_list
+  if (apps_view_key_list.isEmpty ||
+      apps_view_key_list
           .where((element) => element["bn"] == app_bundle_name)
           .isEmpty) {
-    apps_view_list.add({"id": UniqueKey(), "bn": app_bundle_name});
+    apps_view_key_list.add({"id": ValueKey(app_bundle_name), "bn": app_bundle_name});
   }
   // 安全地访问first元素，避免Bad state: No element异常
   var appView =
-      apps_view_list.where((element) => element["bn"] == app_bundle_name);
+      apps_view_key_list.where((element) => element["bn"] == app_bundle_name);
   /*return OpenAppResult(true, null, Container(
     key: appView.isNotEmpty ? appView.first["id"] : UniqueKey(),
     child: app_page,));*/
@@ -408,7 +407,7 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       true,
       null,
       Appview(
-        key: appView.isNotEmpty ? appView.first["id"] : UniqueKey(),
+        key: appView.isNotEmpty ? appView.first["id"] : ValueKey(app_bundle_name),
         cchild: app_page,
       ));
 }
