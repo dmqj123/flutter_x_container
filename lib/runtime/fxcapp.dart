@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:xml/xml.dart';
 
-Widget FxcToWidget(String app_code) {
+Widget FxcToWidget(String app_code, {Function(String)? func}) {
   List<Widget> widgets = [];
   //解析
   final xml = XmlDocument.parse(app_code);
@@ -12,14 +12,14 @@ Widget FxcToWidget(String app_code) {
       //node.name.local标签名称
       //node.children标签子元素
       widgets.add(
-          GetWidgetFromName(node.name.local, node.attributes, node.children));
+          GetWidgetFromName(node.name.local, node.attributes, node.children, func: func));
     }
   }
 
   return Column(children: widgets);
 }
 
-List<Widget> GetChildrenWidgetFromParents(List children) {
+List<Widget> GetChildrenWidgetFromParents(List children, {Function(String)? func}) {
   List<Widget> widgets = [];
   for (var child in children) {
     if (child is XmlElement) {
@@ -28,17 +28,13 @@ List<Widget> GetChildrenWidgetFromParents(List children) {
       //child.children标签子元素
       //child.attributes参数列表
       widgets.add(GetWidgetFromName(
-          child.name.local, child.attributes, child.children));
+          child.name.local, child.attributes, child.children,func: func));
     }
   }
   return widgets;
 }
 
-String? runCode(){
-  
-}
-
-Widget GetWidgetFromName(String cn, List attributes, List children) {
+Widget GetWidgetFromName(String cn, List attributes, List children ,  {Function(String)? func}) {
   switch (cn) {
     case "Column":
       MainAxisAlignment? mainAxisAlignment;
@@ -62,13 +58,13 @@ Widget GetWidgetFromName(String cn, List attributes, List children) {
         }
       }
       return Column(
-          children: GetChildrenWidgetFromParents(children),
+          children: GetChildrenWidgetFromParents(children,func: func),
           mainAxisAlignment: (mainAxisAlignment != null)
               ? mainAxisAlignment
               : MainAxisAlignment.start);
     case "ListView":
       return ListView(
-          shrinkWrap: true, children: GetChildrenWidgetFromParents(children));
+          shrinkWrap: true, children: GetChildrenWidgetFromParents(children,func: func));
     case "Row":
       MainAxisAlignment? mainAxisAlignment;
       for (XmlAttribute arg in attributes) {
@@ -91,7 +87,7 @@ Widget GetWidgetFromName(String cn, List attributes, List children) {
         }
       }
       return Row(
-          children: GetChildrenWidgetFromParents(children),
+          children: GetChildrenWidgetFromParents(children,func: func),
           mainAxisAlignment: (mainAxisAlignment != null)
               ? mainAxisAlignment
               : MainAxisAlignment.start);
@@ -99,7 +95,7 @@ Widget GetWidgetFromName(String cn, List attributes, List children) {
       if (GetChildrenWidgetFromParents(children).length <= 0) {
         break;
       }
-      return Center(child: GetChildrenWidgetFromParents(children)[0]);
+      return Center(child: GetChildrenWidgetFromParents(children,func: func)[0]);
     case "TextButton":
       void Function()? onPressed;
       for (XmlAttribute arg in attributes) {
@@ -112,14 +108,14 @@ Widget GetWidgetFromName(String cn, List attributes, List children) {
               String function_name = arg.value.substring(6, arg.value.length - 2);
               onPressed = () {
                 //调用函数
-
+                func!(function_name);
               };
             }
             break;
         }
       }
       return TextButton(
-        child: GetChildrenWidgetFromParents(children)[0],
+        child: GetChildrenWidgetFromParents(children,func: func)[0],
         onPressed: onPressed,
       );
     case "Text":

@@ -213,7 +213,9 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
         );
       }
 
-      app_page = FxcToWidget(page);
+      app_page = FxcToWidget(page,func: (p0) {
+        runjs(program, p0);
+      },);
     }
     /*
       case "dart":
