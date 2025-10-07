@@ -206,7 +206,7 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
                   }
                 }
                 //TODO 处理fxc命令
-                api_call(command);
+                api_call(command,bundle_name: app_bundle_name);
               },
             );
           },
@@ -348,6 +348,7 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
               callback: (args) {
                 List<String> command = args.toString().split(', ');
                 //TODO 处理fxc命令
+                api_call(command.join(" "),bundle_name: app_bundle_name);
               },
             );
           },
@@ -417,7 +418,7 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
                     command = i;
                   }
                 }
-                api_call(command);
+                api_call(command,bundle_name: app_bundle_name);
                 //TODO 处理fxc命令
               },
             );

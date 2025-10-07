@@ -118,7 +118,7 @@ Future<void> disposeJsEnvironment() async {
   }
 }
 
-ApiCallResult? api_call(String api) {
+ApiCallResult? api_call(String api,{String? bundle_name}) {
   //TODO 完善ApiCall
   //先将由空格分开的api命令通过空格拆分成列表（如果空格由双引号包裹则计入一项）
   List<String> api_list = _parseCommand(api);
@@ -128,8 +128,12 @@ ApiCallResult? api_call(String api) {
   List<String> cargs = api_list.sublist(1);
   //根据命令执行相应的操作
   switch (command) {
+    case "print":
+      print((bundle_name ?? "")+":"+cargs[0]);
+      break;
     case "test":
       print("test_call:" + cargs[0]);
+      break;
     case "api_call":
       List<String> api_path = cargs[0].split("/");
       switch (api_path[0]) {
