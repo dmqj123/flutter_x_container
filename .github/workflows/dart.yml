@@ -14,10 +14,10 @@ on:
           - release
           - debug
       buildPlatform:
-        description: '构建平台（可多选）'
+        description: '构建平台'
         required: true
-        default: ['android', 'ios', 'web', 'windows']
-        type: checkbox
+        default: 'android'
+        type: choice
         options:
           - android
           - ios
@@ -26,7 +26,7 @@ on:
 
 jobs:
   build-windows:
-    if: ${{ contains(inputs.buildPlatform, 'windows') }}
+    if: ${{ inputs.buildPlatform == 'windows' }}
     runs-on: windows-latest
     steps:
       - name: 1. 拉取仓库代码
@@ -45,20 +45,18 @@ jobs:
 
       - name: 4. 构建 Windows 可执行文件
         run: |
-          set BUILD_MODE=${{ inputs.buildMode }}
-          echo 当前构建模式：%%BUILD_MODE%%
-          flutter build windows --%%BUILD_MODE%%
-        shell: cmd
+          BUILD_MODE=${{ inputs.buildMode }}
+          echo "当前构建模式：$BUILD_MODE"
+          flutter build windows --$BUILD_MODE
         working-directory: .
 
       - name: 5. 上传 Windows 可执行文件到构建产物
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Windows-${{ inputs.buildMode }}-v${{ github.run_number }}
-          path: build/windows/runner/${{ inputs.buildMode == 'release' ? 'Release' : 'Debug' }}/**
 
   build-web:
-    if: ${{ contains(inputs.buildPlatform, 'web') }}
+    if: ${{ inputs.buildPlatform == 'web' }}
     runs-on: ubuntu-latest
     steps:
       - name: 1. 拉取仓库代码
@@ -90,10 +88,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Web-${{ inputs.buildMode }}-v${{ github.run_number }}
-          path: build/web/**
 
   build-android:
-    if: ${{ contains(inputs.buildPlatform, 'android') }}
+    if: ${{ inputs.buildPlatform == 'android' }}
     runs-on: ubuntu-latest
     steps:
       - name: 1. 拉取仓库代码
@@ -132,7 +129,7 @@ jobs:
           retention-days: 30
 
   build-ios:
-    if: ${{ contains(inputs.buildPlatform, 'ios') }}
+    if: ${{ inputs.buildPlatform == 'ios' }}
     runs-on: macos-latest
     steps:
       - name: 1. 拉取仓库代码
