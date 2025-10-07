@@ -14,10 +14,10 @@ on:
           - release
           - debug
       buildPlatform:
-        description: '构建平台（android/ios）'
+        description: '构建平台（可多选）'
         required: true
-        default: 'android'
-        type: choice
+        default: ['android', 'ios', 'web', 'windows']
+        type: checkbox
         options:
           - android
           - ios
@@ -26,7 +26,7 @@ on:
 
 jobs:
   build-windows:
-    if: ${{ inputs.buildPlatform == 'windows' }}
+    if: ${{ contains(inputs.buildPlatform, 'windows') }}
     runs-on: windows-latest
     steps:
       - name: 1. 拉取仓库代码
@@ -45,18 +45,20 @@ jobs:
 
       - name: 4. 构建 Windows 可执行文件
         run: |
-          BUILD_MODE=${{ inputs.buildMode }}
-          echo "当前构建模式：$BUILD_MODE"
-          flutter build windows --$BUILD_MODE
+          set BUILD_MODE=${{ inputs.buildMode }}
+          echo 当前构建模式：%%BUILD_MODE%%
+          flutter build windows --%%BUILD_MODE%%
+        shell: cmd
         working-directory: .
 
       - name: 5. 上传 Windows 可执行文件到构建产物
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Windows-${{ inputs.buildMode }}-v${{ github.run_number }}
+          path: build/windows/runner/${{ inputs.buildMode == 'release' ? 'Release' : 'Debug' }}/**
 
   build-web:
-    if: ${{ inputs.buildPlatform == 'web' }}
+    if: ${{ contains(inputs.buildPlatform, 'web') }}
     runs-on: ubuntu-latest
     steps:
       - name: 1. 拉取仓库代码
@@ -88,9 +90,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Web-${{ inputs.buildMode }}-v${{ github.run_number }}
+          path: build/web/**
 
   build-android:
-    if: ${{ inputs.buildPlatform == 'android' }}
+    if: ${{ contains(inputs.buildPlatform, 'android') }}
     runs-on: ubuntu-latest
     steps:
       - name: 1. 拉取仓库代码
@@ -129,7 +132,7 @@ jobs:
           retention-days: 30
 
   build-ios:
-    if: ${{ inputs.buildPlatform == 'ios' }}
+    if: ${{ contains(inputs.buildPlatform, 'ios') }}
     runs-on: macos-latest
     steps:
       - name: 1. 拉取仓库代码
