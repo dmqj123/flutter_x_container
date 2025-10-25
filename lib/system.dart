@@ -126,6 +126,7 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
   String command = api_list[0];
   //将列表中的剩余元素作为参数
   List<String> cargs = api_list.sublist(1);
+  List<String> api_path = cargs[0].split("/");
   //根据命令执行相应的操作
   switch (command) {
     case "print":
@@ -135,7 +136,7 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
       print("test_call:" + cargs[0]);
       break;
     case "api_call":
-      List<String> api_path = cargs[0].split("/");
+      
       switch (api_path[0]) {
         case "show_dialog":
           //弹窗
@@ -145,6 +146,17 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
       }
       break;
     case "ui_api":
+      //js端调用代码：window.flutter_inappwebview.callHandler('fxc_api_call',['ui_api','"change_ui","text01","<Text data="HelloWorld"/>"']);
+      switch (api_path[0]) {
+        case "change_ui":
+          //修改UI
+          //获取内容参数
+          List<String> args = cargs.sublist(1);
+          String id = args[0];
+          String ui_code = args[1];
+          //TODO 修改页面中指定id组件的内容
+          return ApiCallResult(true, null, () => {});
+      }
       break;
     case "get_system_info":
       break;

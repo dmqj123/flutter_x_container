@@ -213,9 +213,16 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
         );
       }
 
-      app_page = FxcToWidget(page,func: (p0) {
+      final fxcKey = GlobalKey<FxcViewState>();
+
+      app_page = FxcView(appCode: page, key: fxcKey, func: (p0) {
         runjs(program, p0);
-      },);
+      });
+
+      // 在组件构建完成后更新组件
+      /*WidgetsBinding.instance.addPostFrameCallback((_) {
+        fxcKey.currentState?.updateWidget('text01', Text('更改后的文字'));
+      });*/
     }
     /*
       case "dart":
