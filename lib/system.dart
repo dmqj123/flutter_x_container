@@ -1,4 +1,5 @@
 import 'dart:async' show Completer;
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -148,7 +149,7 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
       }
       break;
     case "ui_api":
-      //js端调用代码：window.flutter_inappwebview.callHandler('fxc_api_call',['ui_api','"change_ui","text01","<Text data="HelloWorld"/>"']);
+      //js端调用代码：window.flutter_inappwebview.callHandler('fxc_api_call',['ui_api','change_ui','text01', base64EncodedXmlString]);
       switch (api_path[0]) {
         case "change_ui":
           //修改UI
@@ -157,33 +158,52 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
           String id = args[0];
           String ui_code = args[1];
           
-          // 移除引号（如果存在）
-          if (ui_code.startsWith('"') && ui_code.endsWith('"')) {
-            ui_code = ui_code.substring(1, ui_code.length - 1);
-          }
-          
-          // 更新指定应用的UI组件
-          if (bundle_name != null) {
-            try {
-              final fxcKey = getFxcKeyByBundleName(bundle_name);
-              if (fxcKey != null && fxcKey.currentState != null) {
-                // 检查状态是否已挂载，避免在组件未准备好时调用setState
-                if (fxcKey.currentWidget != null && fxcKey.currentState!.mounted) {
-                  // 调用 FxcView 的 updateWidget 方法
-                  fxcKey.currentState!.updateWidget(id, _parseXmlElement(ui_code));
-                } else {
-                  print('FxcView not mounted, skipping UI update for bundle: $bundle_name');
+          // 尝试解码Base64编码的XML字符串
+          try {
+            // 首先检查是否是Base64编码的字符串
+            if (ui_code.length > 0) {
+              // 先尝试Base64解码
+              try {
+                List<int> bytes = base64Decode(ui_code);
+                String decodedXml = utf8.decode(bytes);
+                // 对URL编码的内容进行解码
+                decodedXml = Uri.decodeComponent(decodedXml);
+                ui_code = decodedXml;
+              } catch (e) {
+                // 如果不是Base64编码，则保持原样
+                // 移除引号（如果存在）- 为向后兼容保留
+                if (ui_code.startsWith('"') && ui_code.endsWith('"')) {
+                  ui_code = ui_code.substring(1, ui_code.length - 1);
                 }
-              } else {
-                print('FxcKey not found or not initialized for bundle: $bundle_name');
               }
-            } catch (e) {
-              print('Error updating UI for bundle $bundle_name: $e');
             }
-          } else {
-            print('Bundle name is null, cannot update UI');
+            
+            // 更新指定应用的UI组件
+            if (bundle_name != null) {
+              try {
+                final fxcKey = getFxcKeyByBundleName(bundle_name);
+                if (fxcKey != null && fxcKey.currentState != null) {
+                  // 检查状态是否已挂载，避免在组件未准备好时调用setState
+                  if (fxcKey.currentWidget != null && fxcKey.currentState!.mounted) {
+                    // 调用 FxcView 的 updateWidget 方法
+                    fxcKey.currentState!.updateWidget(id, _parseXmlElement(ui_code));
+                  } else {
+                    print('FxcView not mounted, skipping UI update for bundle: $bundle_name');
+                  }
+                } else {
+                  print('FxcKey not found or not initialized for bundle: $bundle_name');
+                }
+              } catch (e) {
+                print('Error updating UI for bundle $bundle_name: $e');
+              }
+            } else {
+              print('Bundle name is null, cannot update UI');
+            }
+            return ApiCallResult(true, null, () => {});
+          } catch (e) {
+            print('Error decoding UI code: $e');
+            return ApiCallResult(false, 'Failed to decode UI code: $e', () => {});
           }
-          return ApiCallResult(true, null, () => {});
       }
       break;
     case "get_system_info":
