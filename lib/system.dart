@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_x_container/class.dart' show ApiCallResult;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:xml/xml.dart';
+import 'app_manage.dart';
 
 late final SharedPreferences prefs;
 
@@ -154,7 +156,33 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
           List<String> args = cargs.sublist(1);
           String id = args[0];
           String ui_code = args[1];
-          //TODO 修改页面中指定id组件的内容
+          
+          // 移除引号（如果存在）
+          if (ui_code.startsWith('"') && ui_code.endsWith('"')) {
+            ui_code = ui_code.substring(1, ui_code.length - 1);
+          }
+          
+          // 更新指定应用的UI组件
+          if (bundle_name != null) {
+            try {
+              final fxcKey = getFxcKeyByBundleName(bundle_name);
+              if (fxcKey != null && fxcKey.currentState != null) {
+                // 检查状态是否已挂载，避免在组件未准备好时调用setState
+                if (fxcKey.currentWidget != null && fxcKey.currentState!.mounted) {
+                  // 调用 FxcView 的 updateWidget 方法
+                  fxcKey.currentState!.updateWidget(id, _parseXmlElement(ui_code));
+                } else {
+                  print('FxcView not mounted, skipping UI update for bundle: $bundle_name');
+                }
+              } else {
+                print('FxcKey not found or not initialized for bundle: $bundle_name');
+              }
+            } catch (e) {
+              print('Error updating UI for bundle $bundle_name: $e');
+            }
+          } else {
+            print('Bundle name is null, cannot update UI');
+          }
           return ApiCallResult(true, null, () => {});
       }
       break;
@@ -179,4 +207,276 @@ List<String> _parseCommand(String command) {
   }
 
   return result;
+}
+
+/// 将 XML 字符串转换为 Flutter Widget
+Widget _parseXmlElement(String xmlString) {
+  try {
+    // 解析 XML 字符串
+    final document = XmlDocument.parse('<root>$xmlString</root>');
+    if (document.rootElement.children.isNotEmpty) {
+      final element = document.rootElement.children.first;
+      if (element is XmlElement) {
+        return _getWidgetFromXmlElement(element.name.local, element.attributes, element.children);
+      }
+    }
+    return Container(); // 如果解析失败，返回空容器
+  } catch (e) {
+    print('Error parsing XML: $e');
+    return Container(); // 解析失败时返回空容器
+  }
+}
+
+/// 根据 XML 元素创建对应的 Flutter Widget
+Widget _getWidgetFromXmlElement(String elementName, List<XmlAttribute> attributes, List<XmlNode> children) {
+  switch (elementName) {
+    case "Column":
+      MainAxisAlignment? mainAxisAlignment;
+      CrossAxisAlignment? crossAxisAlignment;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "mainAxisAlignment":
+            switch (arg.value) {
+              case "start":
+                mainAxisAlignment = MainAxisAlignment.start;
+                break;
+              case "end":
+                mainAxisAlignment = MainAxisAlignment.end;
+                break;
+              case "center":
+                mainAxisAlignment = MainAxisAlignment.center;
+                break;
+              case "spaceBetween":
+                mainAxisAlignment = MainAxisAlignment.spaceBetween;
+                break;
+              case "spaceAround":
+                mainAxisAlignment = MainAxisAlignment.spaceAround;
+                break;
+              case "spaceEvenly":
+                mainAxisAlignment = MainAxisAlignment.spaceEvenly;
+                break;
+            }
+            break;
+          case "crossAxisAlignment":
+            switch (arg.value) {
+              case "start":
+                crossAxisAlignment = CrossAxisAlignment.start;
+                break;
+              case "end":
+                crossAxisAlignment = CrossAxisAlignment.end;
+                break;
+              case "center":
+                crossAxisAlignment = CrossAxisAlignment.center;
+                break;
+              case "stretch":
+                crossAxisAlignment = CrossAxisAlignment.stretch;
+                break;
+              case "baseline":
+                crossAxisAlignment = CrossAxisAlignment.baseline;
+                break;
+            }
+            break;
+        }
+      }
+      return Column(
+        children: _getChildrenFromXmlNodes(children),
+        mainAxisAlignment: mainAxisAlignment ?? MainAxisAlignment.start,
+        crossAxisAlignment: crossAxisAlignment ?? CrossAxisAlignment.center,
+      );
+    case "ListView":
+      return ListView(
+        shrinkWrap: true,
+        children: _getChildrenFromXmlNodes(children),
+      );
+    case "Row":
+      MainAxisAlignment? mainAxisAlignment;
+      CrossAxisAlignment? crossAxisAlignment;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "mainAxisAlignment":
+            switch (arg.value) {
+              case "start":
+                mainAxisAlignment = MainAxisAlignment.start;
+                break;
+              case "end":
+                mainAxisAlignment = MainAxisAlignment.end;
+                break;
+              case "center":
+                mainAxisAlignment = MainAxisAlignment.center;
+                break;
+              case "spaceBetween":
+                mainAxisAlignment = MainAxisAlignment.spaceBetween;
+                break;
+              case "spaceAround":
+                mainAxisAlignment = MainAxisAlignment.spaceAround;
+                break;
+              case "spaceEvenly":
+                mainAxisAlignment = MainAxisAlignment.spaceEvenly;
+                break;
+            }
+            break;
+          case "crossAxisAlignment":
+            switch (arg.value) {
+              case "start":
+                crossAxisAlignment = CrossAxisAlignment.start;
+                break;
+              case "end":
+                crossAxisAlignment = CrossAxisAlignment.end;
+                break;
+              case "center":
+                crossAxisAlignment = CrossAxisAlignment.center;
+                break;
+              case "stretch":
+                crossAxisAlignment = CrossAxisAlignment.stretch;
+                break;
+              case "baseline":
+                crossAxisAlignment = CrossAxisAlignment.baseline;
+                break;
+            }
+            break;
+        }
+      }
+      return Row(
+        children: _getChildrenFromXmlNodes(children),
+        mainAxisAlignment: mainAxisAlignment ?? MainAxisAlignment.start,
+        crossAxisAlignment: crossAxisAlignment ?? CrossAxisAlignment.center,
+      );
+    case "Center":
+      final childrenWidgets = _getChildrenFromXmlNodes(children);
+      if (childrenWidgets.isNotEmpty) {
+        return Center(child: childrenWidgets.first);
+      }
+      return const Center();
+    case "TextButton":
+      void Function()? onPressed;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "onclick":
+            // 在系统上下文中，我们不能直接调用FxcView的函数，所以暂时设置为空
+            onPressed = () {
+              print('TextButton clicked, but function execution not available in system context');
+            };
+            break;
+        }
+      }
+      return TextButton(
+        child: _getChildrenFromXmlNodes(children).isNotEmpty 
+            ? _getChildrenFromXmlNodes(children).first 
+            : const Text('Button'),
+        onPressed: onPressed,
+      );
+    case "Text":
+      double? fontSize;
+      String data = "";
+      Color? textColor;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "data":
+            data = arg.value.toString();
+            break;
+          case "font_size":
+            fontSize = double.tryParse(arg.value);
+            break;
+          case "text_color":
+            // 简单的颜色解析，支持基本颜色名称
+            textColor = _getColorFromName(arg.value);
+            break;
+        }
+      }
+      return Text(
+        data,
+        style: TextStyle(
+          fontSize: fontSize,
+          color: textColor,
+        ),
+      );
+    case "SizeBox":
+      double? width;
+      double? height;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "width":
+            width = double.tryParse(arg.value);
+            break;
+          case "height":
+            height = double.tryParse(arg.value);
+            break;
+        }
+      }
+      return SizedBox(
+        width: width,
+        height: height,
+      );
+    case "Container":
+      double? width, height;
+      Color? color;
+      for (XmlAttribute arg in attributes) {
+        switch (arg.name.toString()) {
+          case "width":
+            width = double.tryParse(arg.value);
+            break;
+          case "height":
+            height = double.tryParse(arg.value);
+            break;
+          case "color":
+            color = _getColorFromName(arg.value);
+            break;
+        }
+      }
+      return Container(
+        width: width,
+        height: height,
+        color: color,
+        child: _getChildrenFromXmlNodes(children).isNotEmpty 
+            ? _getChildrenFromXmlNodes(children).first 
+            : null,
+      );
+    default:
+      return Container(child: Text('Unknown widget: $elementName'));
+  }
+}
+
+/// 从 XML 节点列表创建子 Widget 列表
+List<Widget> _getChildrenFromXmlNodes(List<XmlNode> nodes) {
+  List<Widget> widgets = [];
+  for (var child in nodes) {
+    if (child is XmlElement) {
+      widgets.add(_getWidgetFromXmlElement(
+          child.name.local, child.attributes, child.children));
+    }
+  }
+  return widgets;
+}
+
+/// 从颜色名称获取 Color 对象
+Color _getColorFromName(String colorName) {
+  switch (colorName.toLowerCase()) {
+    case 'red':
+      return Colors.red;
+    case 'blue':
+      return Colors.blue;
+    case 'green':
+      return Colors.green;
+    case 'yellow':
+      return Colors.yellow;
+    case 'black':
+      return Colors.black;
+    case 'white':
+      return Colors.white;
+    case 'purple':
+      return Colors.purple;
+    case 'orange':
+      return Colors.orange;
+    case 'pink':
+      return Colors.pink;
+    case 'brown':
+      return Colors.brown;
+    case 'grey':
+    case 'gray':
+      return Colors.grey;
+    case 'transparent':
+      return Colors.transparent;
+    default:
+      return Colors.transparent; // 默认透明色
+  }
 }

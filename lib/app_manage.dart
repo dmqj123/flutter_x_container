@@ -15,6 +15,17 @@ import 'package:flutter_x_container/system.dart';
 List<Applnk> apps_list = [];
 
 List<Map<String, dynamic>> apps_view_key_list = [];
+GlobalKey<FxcViewState>? getFxcKeyByBundleName(String bundleName) {
+  var app = apps_view_key_list.firstWhere(
+    (element) => element["bn"] == bundleName && element.containsKey("fxcKey"),
+    orElse: () => <String, dynamic>{},
+  );
+  
+  if (app.containsKey("fxcKey")) {
+    return app["fxcKey"] as GlobalKey<FxcViewState>?;
+  }
+  return null;
+}
 
 void SaveAppList() async {
   //将apps_list保存到preferences中
@@ -223,6 +234,21 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
       /*WidgetsBinding.instance.addPostFrameCallback((_) {
         fxcKey.currentState?.updateWidget('text01', Text('更改后的文字'));
       });*/
+      
+      // 存储 FxcView 的 key 以便后续更新 UI
+      // 如果 apps_view_key_list 中已经存在该应用的记录，则更新它
+      var existingIndex = apps_view_key_list.indexWhere((element) => element["bn"] == app_bundle_name);
+      if (existingIndex != -1) {
+        // 更新现有记录，添加或覆盖 fxcKey
+        apps_view_key_list[existingIndex]["fxcKey"] = fxcKey;
+      } else {
+        // 否则添加新的记录
+        apps_view_key_list.add({
+          "id": ValueKey(app_bundle_name), 
+          "bn": app_bundle_name,
+          "fxcKey": fxcKey
+        });
+      }
     }
     /*
       case "dart":
@@ -445,11 +471,11 @@ Future<OpenAppResult> OpenApp(String app_bundle_name) async {
         break;
     }
   }
-  //如果app_view_list中不包含bn为app_bundle_name的app，则添加
-  if (apps_view_key_list.isEmpty ||
-      apps_view_key_list
-          .where((element) => element["bn"] == app_bundle_name)
-          .isEmpty) {
+  // 如果app_view_list中不包含bn为app_bundle_name的app，则添加
+  // 检查是否已存在该应用的记录
+  var existingIndex = apps_view_key_list.indexWhere((element) => element["bn"] == app_bundle_name);
+  if (existingIndex == -1) {
+    // 如果不存在，添加新的记录（不包含fxcKey，因为不是Fxc类型）
     apps_view_key_list
         .add({"id": ValueKey(app_bundle_name), "bn": app_bundle_name});
   }
