@@ -45,8 +45,8 @@ jobs:
 
       - name: 4. 构建 Windows 可执行文件
         run: |
-          BUILD_MODE=${{ inputs.buildMode }}
-          echo "当前构建模式：$BUILD_MODE"
+          $env:BUILD_MODE="${{ inputs.buildMode }}"
+          echo "当前构建模式：$env:BUILD_MODE"
           flutter build windows --$BUILD_MODE
         working-directory: .
 
@@ -54,6 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Windows-${{ inputs.buildMode }}-v${{ github.run_number }}
+          path: build/windows/runner/${{ inputs.buildMode == 'release' && 'Release' || 'Debug' }}/**
 
   build-web:
     if: ${{ inputs.buildPlatform == 'web' }}
@@ -88,6 +89,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Web-${{ inputs.buildMode }}-v${{ github.run_number }}
+          path: build/web/**
 
   build-android:
     if: ${{ inputs.buildPlatform == 'android' }}
