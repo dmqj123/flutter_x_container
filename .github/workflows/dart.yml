@@ -53,7 +53,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Windows-${{ inputs.buildMode }}-v${{ github.run_number }}
-          path: build/windows/runner/${{ inputs.buildMode == 'release' && 'Release' || 'Debug' }}/**
+          path: build/windows/runner/${{ inputs.buildMode == 'release' && 'Release' || 'Debug' }}/
 
   build-web:
     if: ${{ inputs.buildPlatform == 'web' }}
@@ -88,7 +88,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Flutter-Web-${{ inputs.buildMode }}-v${{ github.run_number }}
-          path: build/web/
+          path: build/web/*
 
   build-android:
     if: ${{ inputs.buildPlatform == 'android' }}
