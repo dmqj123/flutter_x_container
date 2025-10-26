@@ -196,7 +196,7 @@ ApiCallResult? api_call(String api,{String? bundle_name}) {
                 if (fxcKey != null && fxcKey.currentState != null) {
                   // 检查状态是否已挂载，避免在组件未准备好时调用setState
                   if (fxcKey.currentWidget != null && fxcKey.currentState!.mounted) {
-                    // 调用 FxcView 的 updateWidget 方法
+                    // 调用 FxcView 的 updateWidget ！方法
                     fxcKey.currentState!.updateWidget(id, _parseXmlElement(ui_code));
                   } else {
                     print('FxcView not mounted, skipping UI update for bundle: $bundle_name');
